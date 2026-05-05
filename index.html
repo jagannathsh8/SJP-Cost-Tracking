@@ -360,7 +360,7 @@ tbody tr:last-child td{border-bottom:none}
 
   <div class="card card-body" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:8px">
-      <div class="card-title" style="margin:0">Revenue vs Target — April 2026</div>
+      <div class="card-title" id="revBarTitle" style="margin:0">Revenue vs Target</div>
       <div id="revGapInfo" style="font-size:10px;color:var(--m1);text-align:right;line-height:1.65;flex-shrink:0"></div>
     </div>
     <div class="prog-track"><div class="prog-fill" id="revProgFill"></div></div>
@@ -790,7 +790,7 @@ tbody tr:last-child td{border-bottom:none}
   <div class="modal-box">
     <div style="font-size:17px;font-weight:800;margin-bottom:6px" id="addSheetModalTitle">＋ Add Sheet</div>
     <div style="font-size:12px;color:var(--m1);margin-bottom:16px;line-height:1.75">Give a label (e.g. "SJP — April 2026") and paste the Apps Script <code style="background:var(--s2);padding:1px 5px;border-radius:4px">/exec</code> URL.</div>
-    <input class="inp" id="addSheetLabel" placeholder="Label: SJP — April 2026" style="margin-bottom:10px">
+    <input class="inp" id="addSheetLabel" placeholder="Label: e.g. SJP — May 2026" style="margin-bottom:10px">
     <input class="inp" id="addSheetUrl" placeholder="https://script.google.com/macros/s/.../exec" style="margin-bottom:10px;font-size:11px">
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" style="flex:1" onclick="saveSheet()">Save &amp; Sync</button>
@@ -911,6 +911,9 @@ function calcMetrics(){
     var isTotalGas  = (kLow.indexOf('total') !== -1 && kLow.indexOf('gas') !== -1);
     var isElec      = kLow.indexOf('electric') !== -1;
     if(isTotalGas || isElec) {
+      // Exclude units from the main cost metrics if it's explicitly labeled as units
+      if(kLow.indexOf('unit') !== -1 && kLow.indexOf('value') === -1) return;
+      
       var isAmt = kLow.indexOf('value') !== -1 || kLow.indexOf('amount') !== -1 || kLow.indexOf('cost') !== -1 || kLow.indexOf('expenses') !== -1 || sum(dd[k]) > 1000;
       pushCost(k, dd[k], isAmt);
     }
@@ -953,6 +956,15 @@ function renderUI(){
   // Header
   document.getElementById('hdrDays').textContent = 'Day '+m.n+' of '+MONTH_DAYS+' · '+m.dLeft+' days left';
   document.getElementById('hdrDate').textContent = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+  
+  // Update section title if we have an active sheet
+  if(window.activeSheetId) {
+    var titleEl = document.getElementById('revBarTitle');
+    if(titleEl) {
+      var parts = window.activeSheetId.split('__');
+      if(parts.length > 1) titleEl.textContent = 'Revenue vs Target — ' + parts[1];
+    }
+  }
 
   // ── KPIs ──
   var kpis = [
@@ -1047,8 +1059,16 @@ function renderUI(){
   var totGas = 0, totElec = 0;
   Object.keys(window.DYNAMIC_DATA || {}).forEach(function(k) {
     var kl = k.toLowerCase();
-    if(kl.indexOf('total')!==-1 && kl.indexOf('gas')!==-1) totGas = sum(window.DYNAMIC_DATA[k]);
-    if(kl.indexOf('electric')!==-1) totElec = sum(window.DYNAMIC_DATA[k]);
+    var isValKey = kl.indexOf('value')!==-1 || kl.indexOf('amount')!==-1 || kl.indexOf('cost')!==-1 || kl.indexOf('expenses')!==-1;
+    
+    if(kl.indexOf('electric')!==-1) {
+      if(isValKey) totElec = sum(window.DYNAMIC_DATA[k]);
+      else if(totElec === 0) totElec = sum(window.DYNAMIC_DATA[k]);
+    }
+    if(kl.indexOf('total')!==-1 && kl.indexOf('gas')!==-1) {
+      if(isValKey) totGas = sum(window.DYNAMIC_DATA[k]);
+      else if(totGas === 0) totGas = sum(window.DYNAMIC_DATA[k]);
+    }
   });
 
   // ── Cost summary table ──
@@ -1336,7 +1356,12 @@ function pickMsg(btn){
 // ═══════════════════════════════════════════════
 function buildCtx(){
   var m = calcMetrics();
-  return 'SJP Store MIS Data \u2014 April 2026 ('+m.n+' days done, '+m.dLeft+' days left):\n'
+  var monthName = 'Selected Month';
+  if(window.activeSheetId) {
+    var parts = window.activeSheetId.split('__');
+    if(parts.length > 1) monthName = parts[1];
+  }
+  return 'SJP Store MIS Data \u2014 ' + monthName + ' ('+m.n+' days done, '+m.dLeft+' days left):\n'
     +'- MTD Revenue: \u20b9'+fmtN(m.tRev)+' | Target: \u20b9'+fmtN(TARGET)+' | Achievement: '+m.ach.toFixed(1)+'%\n'
     +'- Daily Avg: \u20b9'+fmtN(rnd(m.dAvg))+' | Last 7d Avg: \u20b9'+fmtN(rnd(m.l7avg))+'\n'
     +'- Projected Month-end: \u20b9'+fmtN(rnd(m.proj))+' | Revenue Gap: \u20b9'+fmtN(rnd(m.gap))+'\n'
