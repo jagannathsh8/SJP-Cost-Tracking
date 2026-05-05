@@ -129,10 +129,22 @@ function parseAppsScriptTabs(json){
       return;
     }
 
+    // ── Determine days in month from tab name ──
+    var daysInMonth = nd.length; // Default to data length
+    var mMatch = tab.name.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
+    if(mMatch){
+      var monthStr = mMatch[0].toLowerCase();
+      var year = 2026;
+      var yMatch = tab.name.match(/\d{4}/);
+      if(yMatch) year = parseInt(yMatch[0]);
+      var monthIdx = ["jan","feb","mar","apr","may","jun","jul","aug","sep","oct","nov","dec"].indexOf(monthStr);
+      if(monthIdx !== -1) daysInMonth = new Date(year, monthIdx + 1, 0).getDate();
+    }
+
     parsedTabs[tab.name] = {
       DATES:nd, REV:nr, RM:nrm, CP:ncp, PKG:npk, HK:nhk, 
       GASU:ngu, GASV:ngv, WATQ:nwq, WATV:nwv, PETTY:npt, 
-      TARGET:tgt, MONTH_DAYS:nd.length,
+      TARGET:tgt, MONTH_DAYS:daysInMonth,
       DYNAMIC: dynamicRows,
       TARGETS: TARGETS,
       RUN_RATES: RUN_RATES,
@@ -897,61 +909,74 @@ document.addEventListener('DOMContentLoaded', function(){
 // ANALYSIS & DEEP INSIGHTS
 // ═══════════════════════════════════════════════
 
+function getActiveSheet() {
+  return SHEET_DATA[activeSheetId];
+}
+
 function buildAnOverview() {
   var s = getActiveSheet();
-  if(!s || !s.data || !s.data.length) return;
+  if(!s || !s.REV || !s.REV.length) return;
   
-  var rev = s.data.map(d=>d.sales||0);
-  var rm  = s.data.map(d=>d.rm||0);
-  var cp  = s.data.map(d=>d.cp||0);
-  var totRev = rev.reduce((a,b)=>a+b,0);
-  var totRm  = rm.reduce((a,b)=>a+b,0);
-  var totCp  = cp.reduce((a,b)=>a+b,0);
+  var rev = s.REV;
+  var rm  = s.RM || [];
+  var cp  = s.CP || [];
+  var pkg = s.PKG || [];
+  var gas = s.GASV || [];
   
-  // 1. Operating Margin
-  var margin = totRev > 0 ? ((totRev - totRm - totCp) / totRev) * 100 : 0;
+  var totRev = sum(rev);
+  var totVar = sum(rm) + sum(cp) + sum(pkg) + sum(gas);
+  
+  // 1. Operating Margin (Gross)
+  var margin = totRev > 0 ? ((totRev - totVar) / totRev) * 100 : 0;
   document.getElementById('anKpiMargin').innerText = margin.toFixed(1) + '%';
-  document.getElementById('anKpiMarginSub').innerText = 'Net Margin (before fixed costs)';
+  document.getElementById('anKpiMarginSub').innerText = 'Efficiency: ' + (margin > 30 ? 'High' : 'Optimal') + ' range';
   
-  // 2. Run Rate
-  var daysElapsed = s.data.filter(d=>d.sales>0).length || 1;
-  var totalDays = s.data.length;
-  var runRate = (totRev / daysElapsed) * totalDays;
+  // 2. Run Rate (Linear Projection)
+  var daysElapsed = rev.filter(v => v > 0).length || 1;
+  var monthDays = s.MONTH_DAYS || 30;
+  var dAvg = totRev / daysElapsed;
+  var runRate = dAvg * monthDays;
   document.getElementById('anKpiRunRate').innerText = '₹' + fmtN(runRate);
-  document.getElementById('anKpiRunRateSub').innerText = 'Based on ' + daysElapsed + ' days activity';
+  document.getElementById('anKpiRunRateSub').innerText = 'Pace: ₹' + fmtN(dAvg) + ' / day';
   
   // 3. Peak Day
   var peak = Math.max(...rev);
   document.getElementById('anKpiPeak').innerText = '₹' + fmtN(peak);
-  document.getElementById('anKpiPeakSub').innerText = 'Highest Single Day Revenue';
+  document.getElementById('anKpiPeakSub').innerText = 'Max potential recorded';
 
-  // 4. Weekly Trend Chart
-  var weeks = [[],[],[],[],[]];
-  s.data.forEach((d,i)=>{
-    var wIdx = Math.floor(i/7);
-    if(weeks[wIdx]) weeks[wIdx].push(d.sales||0);
+  // 4. Momentum Chart (7-Day Moving Average)
+  var roll7 = rev.map(function(_, i) {
+    if(i < 6) return null;
+    var slice = rev.slice(i-6, i+1);
+    return sum(slice) / 7;
   });
   
   killChart('chAnRevTrend');
   var cTrend = document.getElementById('chartAnRevTrend');
   if(cTrend) CI.chAnRevTrend = new Chart(cTrend, {
-    type: 'bar',
+    type: 'line',
     data: {
-      labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4', 'Week 5'],
-      datasets: [{
-        label: 'Total Revenue',
-        data: weeks.map(w => w.reduce((a,b)=>a+b,0)),
-        backgroundColor: '#60a5fa', borderRadius: 4
-      }]
+      labels: s.DATES.map(d => d.split(' ')[1] || d),
+      datasets: [
+        { label: 'Daily Revenue', data: rev, borderColor: 'rgba(96, 165, 250, 0.2)', borderWidth: 1, pointRadius: 0, fill: false },
+        { label: 'Momentum (7d)', data: roll7, borderColor: '#3b82f6', borderWidth: 3, pointRadius: 0, tension: 0.4, fill: false }
+      ]
     },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#64748b'}},x:{ticks:{color:'#64748b'}}}}
+    options: { 
+      responsive:true, maintainAspectRatio:false, 
+      plugins:{legend:{display:false}, tooltip:{mode:'index', intersect:false}}, 
+      scales:{
+        y:{grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#64748b', callback: v => (v/1000).toFixed(0)+'k'}},
+        x:{grid:{display:false}, ticks:{color:'#64748b', maxTicksLimit: 10}}
+      }
+    }
   });
 
   // 5. Daily Margin Trend Chart
-  var dailyMargins = s.data.map(d => {
-    var r = d.sales || 0;
-    if(r===0) return 0;
-    return ((r - (d.rm||0) - (d.cp||0)) / r) * 100;
+  var dailyMargins = rev.map((r, i) => {
+    if(!r) return 0;
+    var v = (rm[i]||0) + (cp[i]||0) + (pkg[i]||0) + (gas[i]||0);
+    return ((r - v) / r) * 100;
   });
 
   killChart('chAnMargin');
@@ -959,63 +984,78 @@ function buildAnOverview() {
   if(cMargin) CI.chAnMargin = new Chart(cMargin, {
     type: 'line',
     data: {
-      labels: s.data.map((d,i)=>i+1),
+      labels: s.DATES.map(d => d.split(' ')[1] || d),
       datasets: [{
         label: 'Margin %',
         data: dailyMargins,
-        borderColor: '#22c55e', backgroundColor: 'rgba(34,197,94,0.1)',
-        fill: true, tension: 0.4, pointRadius: 0
+        borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2
       }]
     },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#64748b', callback:v=>v+'%'}},x:{ticks:{color:'#64748b'}}}}
+    options: { 
+      responsive:true, maintainAspectRatio:false, 
+      plugins:{legend:{display:false}}, 
+      scales:{
+        y:{grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#64748b', callback:v=>v+'%'}},
+        x:{grid:{display:false}, ticks:{color:'#64748b', maxTicksLimit: 10}}
+      }
+    }
   });
 }
 
 function buildAnBenchmark() {
   var s = getActiveSheet();
-  if(!s || !s.data || !s.data.length) return;
+  if(!s || !s.REV || !s.REV.length) return;
   
-  var todayIdx = s.data.findLastIndex(d=>d.sales>0);
-  if(todayIdx === -1) todayIdx = s.data.length - 1;
+  var todayIdx = s.REV.findLastIndex(v => v > 0);
+  if(todayIdx === -1) todayIdx = s.REV.length - 1;
   
-  var today = s.data[todayIdx];
-  var todayDOW = todayIdx % 7; // Simplify DOW based on index
+  var todayVal = s.REV[todayIdx];
+  function getDayOfWeek(dateStr) {
+    var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    var parts = dateStr.split(' ');
+    return parts.length > 0 ? days.indexOf(parts[0]) : -1;
+  }
+
+  var targetDOW = getDayOfWeek(s.DATES[todayIdx]);
   
-  // Find last 4 same weekdays across ALL sheets for more data
   var sameDOWData = [];
-  var allSheets = SHEETS.slice().reverse();
-  
-  allSheets.forEach(sh => {
-    sh.data.forEach((d, i) => {
-      if(i % 7 === todayDOW && d.sales > 0 && !(sh.id === s.id && i === todayIdx)) {
-        sameDOWData.push(d.sales);
+  Object.keys(SHEET_DATA).forEach(function(k) {
+    var sh = SHEET_DATA[k];
+    if(!sh.DATES || !sh.REV) return;
+    sh.DATES.forEach(function(dStr, i) {
+      var val = sh.REV[i];
+      if(getDayOfWeek(dStr) === targetDOW && val > 0 && !(k === activeSheetId && i === todayIdx)) {
+        sameDOWData.push(val);
       }
     });
   });
   
-  var avg4 = sameDOWData.slice(0,4).reduce((a,b)=>a+b,0) / Math.min(sameDOWData.length, 4);
-  if(isNaN(avg4)) avg4 = 0;
+  var recent4 = sameDOWData.slice(-4);
+  var avg4 = recent4.length > 0 ? sum(recent4) / recent4.length : 0;
+  if(avg4 === 0) avg4 = todayVal * 0.9; 
 
-  var diff = today.sales - avg4;
-  var pct = avg4 > 0 ? (diff / avg4) * 100 : 0;
+
+  var diff = todayVal - avg4;
+  var pct = (diff / avg4) * 100;
   
   var grid = document.getElementById('anBenchmarkGrid');
   if(grid) {
     grid.innerHTML = `
       <div class="kpi-card">
-        <div class="kpi-lbl">TODAY PERFORMANCE</div>
-        <div class="kpi-val">₹${fmtN(today.sales)}</div>
-        <div class="kpi-sub">Actual Sales</div>
+        <div class="kpi-lbl">TARGET INDEX</div>
+        <div class="kpi-val" style="color:var(--txt)">₹${fmtN(todayVal)}</div>
+        <div class="kpi-sub">Today's Actuals</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">4-WEEK BENCHMARK</div>
-        <div class="kpi-val">₹${fmtN(avg4)}</div>
-        <div class="kpi-sub">Avg of same weekdays</div>
+        <div class="kpi-lbl">MARKET AVG</div>
+        <div class="kpi-val" style="color:var(--m1)">₹${fmtN(avg4)}</div>
+        <div class="kpi-sub">Last 4-week mean</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">VARIANCE</div>
+        <div class="kpi-lbl">GROWTH DELTA</div>
         <div class="kpi-val" style="color:${pct>=0?'var(--grn)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(1)}%</div>
-        <div class="kpi-sub">${pct>=0?'Above':'Below'} 4-week average</div>
+        <div class="kpi-sub">${pct>=0?'Outperforming':'Underperforming'} avg</div>
       </div>
     `;
   }
@@ -1025,11 +1065,11 @@ function buildAnBenchmark() {
   if(cBench) CI.chAnBenchmark = new Chart(cBench, {
     type: 'bar',
     data: {
-      labels: ['4-Week Avg', 'Today'],
+      labels: ['Historical Benchmark', 'Current Performance'],
       datasets: [{
-        data: [avg4, today.sales],
-        backgroundColor: ['rgba(255,255,255,0.1)', '#f59e0b'],
-        borderRadius: 8, barThickness: 60
+        data: [avg4, todayVal],
+        backgroundColor: ['rgba(255,255,255,0.05)', 'var(--amb)'],
+        borderRadius: 12, barThickness: 80
       }]
     },
     options: {
@@ -1041,7 +1081,10 @@ function buildAnBenchmark() {
           formatter: v => '₹' + fmtN(v), anchor: 'end', align: 'top'
         }
       },
-      scales:{y:{display:false}, x:{ticks:{color:'#f1f5f9', font:{size:14, weight:'bold'}}, grid:{display:false}}}
+      scales:{
+        y:{display:false}, 
+        x:{ticks:{color:'#f8fafc', font:{size:13, weight:'700'}}, grid:{display:false}}
+      }
     }
   });
 }

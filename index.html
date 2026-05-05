@@ -19,9 +19,11 @@ html,body{min-height:100%;background:#07090f;color:#f1f5f9;font-family:'DM Sans'
 
 /* ─ VARIABLES ─ */
 :root{
-  --bg:#07090f; --s1:#0d1117; --s2:#111827; --b1:#1a2235; --b2:#212d42;
-  --amb:#f59e0b; --grn:#22c55e; --red:#ef4444; --blu:#60a5fa;
-  --pur:#a78bfa; --cyn:#38bdf8; --txt:#f1f5f9; --m1:#64748b; --m2:#94a3b8;
+  --bg:#03050a; --s1:#0a0d14; --s2:#111621; --b1:#1e2533; --b2:#2a3447;
+  --amb:#f59e0b; --grn:#10b981; --red:#f43f5e; --blu:#3b82f6;
+  --pur:#8b5cf6; --cyn:#06b6d4; --txt:#f8fafc; --m1:#94a3b8; --m2:#cbd5e1;
+  --glass:rgba(15, 23, 42, 0.6); --glass-border:rgba(255, 255, 255, 0.08);
+  --shadow:0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
 
 /* ─ HEADER ─ */
@@ -46,9 +48,10 @@ html,body{min-height:100%;background:#07090f;color:#f1f5f9;font-family:'DM Sans'
 .page{display:none; min-height: 80vh; }.page.active{display:block}
 
 /* ─ CARDS ─ */
-.card{background:var(--s1);border:1px solid var(--b1);border-radius:13px;overflow:hidden}
+.card{background:var(--s1);border:1px solid var(--b1);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);transition:transform 0.2s ease, border-color 0.2s ease;}
+.card:hover{border-color:var(--b2);}
 @media(max-width:600px){
-  .card { border-radius: 0; border-left: none; border-right: none; margin-bottom: 8px !important; }
+  .card { border-radius: 0; border-left: none; border-right: none; margin-bottom: 12px !important; box-shadow: none; }
 }
 .card-body{padding:16px}
 @media(max-width:600px){
@@ -62,10 +65,11 @@ html,body{min-height:100%;background:#07090f;color:#f1f5f9;font-family:'DM Sans'
 
 /* ─ KPI GRID ─ */
 .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-.kpi-card{background:var(--s1);border:1px solid var(--b1);border-radius:12px;padding:14px}
-.kpi-lbl{font-size:9px;color:var(--m1);font-weight:700;letter-spacing:.8px;text-transform:uppercase;margin-bottom:7px}
-.kpi-val{font-size:20px;font-weight:800;font-family:'DM Mono',monospace;line-height:1.1}
-.kpi-sub{font-size:10px;color:var(--m1);margin-top:5px;line-height:1.5}
+.kpi-card{background:linear-gradient(145deg, var(--s1), var(--s2));border:1px solid var(--b1);border-radius:18px;padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
+.kpi-card::after{content:'';position:absolute;top:0;right:0;width:60px;height:60px;background:radial-gradient(circle at top right, rgba(255,255,255,0.03), transparent 70%);}
+.kpi-lbl{font-size:10px;color:var(--m1);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
+.kpi-val{font-size:24px;font-weight:800;font-family:'DM Sans',sans-serif;line-height:1;letter-spacing:-0.5px}
+.kpi-sub{font-size:11px;color:var(--m1);margin-top:8px;line-height:1.4;font-weight:500}
 
 /* ─ PROGRESS ─ */
 .prog-track{background:var(--s2);border-radius:6px;height:9px;overflow:hidden;margin-bottom:7px}
@@ -678,51 +682,59 @@ tbody tr:last-child td{border-bottom:none}
 
 <!-- ══════════ ANALYSIS & INSIGHTS ══════════ -->
 <div class="page" id="page-analysis">
-  <div style="font-size:18px;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:8px">
-    <span style="font-size:22px">📈</span> Deep Analysis & Business Intelligence
+  <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end">
+    <div>
+      <div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;color:var(--txt)">Business Intelligence</div>
+      <div style="font-size:12px;color:var(--m1);margin-top:4px">Deep insights and cross-outlet performance metrics.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+       <button class="btn btn-ghost" style="padding:8px 14px;border-radius:12px" onclick="syncAllSheets()">Sync Live</button>
+    </div>
   </div>
-  <div style="font-size:11px;color:var(--m1);margin-bottom:20px">Advanced cross-sheet benchmarks and algorithmic performance insights.</div>
 
-  <!-- INSIGHT TABS -->
-  <div class="stab-bar" style="margin-bottom:20px">
-    <button class="stab-btn active" id="btnAnOverview" onclick="switchAnTab('overview')">Overview</button>
-    <button class="stab-btn" id="btnAnBenchmark" onclick="switchAnTab('benchmark')">Day Benchmark</button>
+  <div class="stab-bar" style="margin-bottom:24px;background:var(--s1);padding:6px;border-radius:14px;border:1px solid var(--b1)">
+    <button class="stab-btn active" id="btnAnOverview" onclick="switchAnTab('overview')">Market Overview</button>
+    <button class="stab-btn" id="btnAnBenchmark" onclick="switchAnTab('benchmark')">Growth Benchmark</button>
     <button class="stab-btn" id="btnAnCompare" onclick="switchAnTab('compare')">Smart Compare</button>
   </div>
 
   <!-- AN OVERVIEW -->
   <div id="an-overview">
-    <div class="kpi-grid">
+    <div class="grid3" style="margin-bottom:20px">
       <div class="kpi-card">
-        <div class="kpi-lbl">OPERATING MARGIN</div>
+        <div class="kpi-lbl">OP. MARGIN (MTD)</div>
         <div class="kpi-val" id="anKpiMargin" style="color:var(--grn)">--</div>
-        <div class="kpi-sub" id="anKpiMarginSub">Revenue vs Variable Costs</div>
+        <div class="kpi-sub" id="anKpiMarginSub">Revenue minus variable costs</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-lbl">REVENUE RUN RATE</div>
         <div class="kpi-val" id="anKpiRunRate" style="color:var(--amb)">--</div>
-        <div class="kpi-sub" id="anKpiRunRateSub">Projected Month End</div>
+        <div class="kpi-sub" id="anKpiRunRateSub">Projected month-end closing</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">PEAK DAY AVG</div>
+        <div class="kpi-lbl">PEAK PERFORMANCE</div>
         <div class="kpi-val" id="anKpiPeak" style="color:var(--pur)">--</div>
-        <div class="kpi-sub" id="anKpiPeakSub">Highest performance level</div>
+        <div class="kpi-sub" id="anKpiPeakSub">Highest single-day achievement</div>
       </div>
     </div>
 
-    <div class="grid2" style="margin-top:12px">
+    <div class="grid2" style="gap:20px">
       <div class="card card-body">
-        <div class="card-title">Weekly Revenue Trend (Side-by-Side)</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-size:15px;font-weight:800;color:var(--txt)">Revenue Momentum</div>
+          <div style="font-size:10px;color:var(--m1);background:var(--s2);padding:4px 8px;border-radius:6px">7-Day Moving Avg</div>
+        </div>
         <div class="chart-wrap">
-          <button class="exp-btn" onclick="expandChart('chAnRevTrend', 'Weekly Trend')">⛶</button>
-          <div style="position:relative;height:240px"><canvas id="chartAnRevTrend"></canvas></div>
+          <div style="position:relative;height:280px"><canvas id="chartAnRevTrend"></canvas></div>
         </div>
       </div>
       <div class="card card-body">
-        <div class="card-title">Daily Margin Analysis (%)</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+          <div style="font-size:15px;font-weight:800;color:var(--txt)">Efficiency Curve</div>
+          <div style="font-size:10px;color:var(--m1);background:var(--s2);padding:4px 8px;border-radius:6px">Daily Margin %</div>
+        </div>
         <div class="chart-wrap">
-          <button class="exp-btn" onclick="expandChart('chAnMargin', 'Daily Margin')">⛶</button>
-          <div style="position:relative;height:240px"><canvas id="chartAnMargin"></canvas></div>
+          <div style="position:relative;height:280px"><canvas id="chartAnMargin"></canvas></div>
         </div>
       </div>
     </div>
@@ -731,37 +743,42 @@ tbody tr:last-child td{border-bottom:none}
   <!-- AN BENCHMARK -->
   <div id="an-benchmark" style="display:none">
     <div class="card card-body">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
-        <div class="card-title" style="margin:0">4-Week Weekday Benchmark</div>
-        <div style="font-size:10px;color:var(--m1)">Comparison of same weekdays over 4 weeks</div>
+      <div style="margin-bottom:24px">
+        <div style="font-size:18px;font-weight:900;color:var(--txt)">Same-Day Performance Index</div>
+        <div style="font-size:12px;color:var(--m1);margin-top:4px">How today compares to the last 4 similar weekdays.</div>
       </div>
-      <div id="anBenchmarkStatus" style="font-size:11px;color:var(--amb);margin-bottom:10px;display:none">Requires at least 28 days of data for full insight.</div>
-      <div style="margin-top:10px;height:320px"><canvas id="chartAnBenchmark"></canvas></div>
-      
-      <div id="anBenchmarkGrid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-top:20px"></div>
+      <div id="anBenchmarkStatus" style="font-size:12px;color:var(--amb);padding:12px;background:rgba(245,158,11,0.05);border-radius:12px;margin-bottom:20px;display:none">
+        Insights will appear as more historical data becomes available.
+      </div>
+      <div style="height:350px"><canvas id="chartAnBenchmark"></canvas></div>
+      <div id="anBenchmarkGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px"></div>
     </div>
   </div>
 
   <!-- AN COMPARE -->
   <div id="an-compare" style="display:none">
     <div class="card card-body">
-      <div class="card-title">Cross-Sheet Smart Comparison</div>
-      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;margin-top:15px">
+      <div style="margin-bottom:24px">
+        <div style="font-size:18px;font-weight:900;color:var(--txt)">Smart Comparison Engine</div>
+        <div style="font-size:12px;color:var(--m1);margin-top:4px">Select two dates or periods to see detailed variance analysis.</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:24px;align-items:center;background:var(--s2);padding:24px;border-radius:18px;border:1px solid var(--b1)">
         <div>
-          <label style="font-size:10px;color:var(--m1)">Sheet A:</label>
-          <select id="anaDateSheetA" class="inp" onchange="populateAnaDates('A')"><option value="">-- Sheet --</option></select>
-          <select id="anaDateA" class="inp" style="margin-top:8px"><option value="">-- Date --</option></select>
+          <label style="font-size:11px;font-weight:700;color:var(--m1);margin-bottom:10px;display:block">Baseline Selection</label>
+          <select id="anaDateSheetA" class="inp" onchange="populateAnaDates('A')" style="background:var(--s1);border-radius:12px"><option value="">-- Select Sheet --</option></select>
+          <select id="anaDateA" class="inp" style="margin-top:12px;background:var(--s1);border-radius:12px"><option value="">-- Select Date --</option></select>
         </div>
-        <div style="font-size:12px;font-weight:700;color:var(--m1);margin-top:20px">VS</div>
+        <div style="font-size:14px;font-weight:900;color:var(--b2);padding-top:20px">VS</div>
         <div>
-          <label style="font-size:10px;color:var(--m1)">Sheet B:</label>
-          <select id="anaDateSheetB" class="inp" onchange="populateAnaDates('B')"><option value="">-- Sheet --</option></select>
-          <select id="anaDateB" class="inp" style="margin-top:8px"><option value="">-- Date --</option></select>
+          <label style="font-size:11px;font-weight:700;color:var(--m1);margin-bottom:10px;display:block">Comparison Target</label>
+          <select id="anaDateSheetB" class="inp" onchange="populateAnaDates('B')" style="background:var(--s1);border-radius:12px"><option value="">-- Select Sheet --</option></select>
+          <select id="anaDateB" class="inp" style="margin-top:12px;background:var(--s1);border-radius:12px"><option value="">-- Select Date --</option></select>
         </div>
       </div>
-      <button class="btn btn-primary" style="margin-top:20px;max-width:200px" onclick="runDateVsDate()">Analyze Comparison →</button>
-      
-      <div id="anaDateResult" style="margin-top:25px"></div>
+      <div style="display:flex;justify-content:center;margin-top:24px">
+        <button class="btn btn-primary" style="max-width:280px;height:48px;border-radius:14px;box-shadow:0 10px 20px -5px rgba(245,158,11,0.4)" onclick="runDateVsDate()">Generate Comparison Report</button>
+      </div>
+      <div id="anaDateResult" style="margin-top:32px"></div>
     </div>
   </div>
 </div>
