@@ -1,0 +1,17 @@
+{
+  "name": "SJP MIS Dashboard",
+  "short_name": "SJP MIS",
+  "description": "Financial Analytics Dashboard for SJP Store",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#0d1117",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/1458/1458260.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

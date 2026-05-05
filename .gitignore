@@ -1,0 +1,16 @@
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
+npm-debug.log
+package-lock.json
+
+# Local config
+*.local
+.env
