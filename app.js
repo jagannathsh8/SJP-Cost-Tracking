@@ -62,6 +62,16 @@ function parseAppsScriptTabs(json){
   var parsedTabs = {};
   
   json.tabs.forEach(function(tab){
+    if(tab.name.toUpperCase() === 'MIS') {
+      window.MIS_DATA = tab.rawData;
+      return;
+    }
+
+    if(tab.name.toLowerCase().indexOf('employee') !== -1) {
+      window.TEAM_DATA = tab.data;
+      return;
+    }
+
     var data = tab.data;
     if(!data || !data.length) return;
     
@@ -124,16 +134,6 @@ function parseAppsScriptTabs(json){
       Object.keys(dynamicRows).forEach(function(dr){ dynamicRows[dr].push(getVal(findRow(dr), dKey)); });
     }
     
-    if(tab.name.toUpperCase() === 'MIS') {
-      window.MIS_DATA = tab.rawData;
-      return;
-    }
-
-    if(tab.name.toLowerCase().indexOf('employee') !== -1) {
-      window.TEAM_DATA = data;
-      return;
-    }
-
     // ── Determine days in month from tab name ──
     var daysInMonth = nd.length; // Default to data length
     var mMatch = tab.name.match(/(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i);
@@ -207,7 +207,15 @@ function switchActiveSheet(compositeId){
   killAllCharts();
   Object.keys(builtPages).forEach(function(k){ delete builtPages[k]; });
   renderUI();
-  setTimeout(function(){ buildPageCharts('overview'); },80);
+  
+  // Re-build the currently active page instead of hardcoding 'overview'
+  var activeNav = document.querySelector('.nav-btn.active');
+  var activePage = activeNav ? activeNav.getAttribute('data-page') : 'overview';
+  setTimeout(function(){ 
+    buildPageCharts(activePage); 
+    if(activePage === 'mis' && window.renderMIS) renderMIS();
+  }, 80);
+  
   document.getElementById('srcInfoEl').textContent = 'Active: '+(entry?entry.label:'')+' ('+d.tabName+') · '+DATES.length+' days';
 }
 
