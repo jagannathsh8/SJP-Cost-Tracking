@@ -332,6 +332,7 @@ tbody tr:last-child td{border-bottom:none}
   <button class="nav-btn" data-page="revenue">💰 Revenue</button>
   <button class="nav-btn" data-page="costs">⚙️ Costs</button>
   <button class="nav-btn" data-page="daily">📅 Daily Log</button>
+  <button class="nav-btn" data-page="mis">📑 MIS</button>
   <button class="nav-btn" data-page="team">🧑‍🤝‍🧑 Team</button>
   <button class="nav-btn" data-page="intel">✦ Intelligence</button>
   <button class="nav-btn" data-page="analysis">📈 Analysis</button>
@@ -512,6 +513,7 @@ tbody tr:last-child td{border-bottom:none}
     <button class="stab-btn active" onclick="switchSubTab('analysis', this)">📊 Analysis</button>
     <button class="stab-btn" onclick="switchSubTab('forecast', this)">🔮 Forecast</button>
     <button class="stab-btn" onclick="switchSubTab('messages', this)">✉️ Messages</button>
+    <button class="stab-btn" onclick="switchSubTab('chat', this)">💬 AI Chat</button>
   </div>
 
   <!-- Analysis -->
@@ -602,6 +604,29 @@ tbody tr:last-child td{border-bottom:none}
       <div class="out-box" id="txtMessage" style="font-family:'DM Mono',monospace"></div>
     </div>
   </div>
+
+  <!-- Chat -->
+  <div id="subtab-chat" style="display:none">
+    <div class="card card-body" style="margin-bottom:12px; display:flex; flex-direction:column; height:500px; padding:0; overflow:hidden;">
+      <div style="background:var(--s2); padding:10px 15px; font-weight:800; border-bottom:1px solid var(--b1); font-size:13px; color:var(--txt);">
+        💬 Ask AI About Your Data
+        <div style="font-size:10px; color:var(--m1); font-weight:normal;">AI has access to all connected sheets, MIS, and Team data.</div>
+      </div>
+      <div id="chatHistory" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:12px;">
+        <div style="align-self:flex-start; background:var(--s2); padding:10px 14px; border-radius:12px; border-bottom-left-radius:2px; font-size:13px; line-height:1.5; color:var(--txt); max-width:85%;">
+          Hello! I have access to all your dashboard data. Ask me anything, for example: <br>
+          <i>"Which month had the highest margin?"</i> or <i>"What are the top action pointers in MIS?"</i>
+        </div>
+      </div>
+      <div style="padding:10px; border-top:1px solid var(--b1); display:flex; gap:8px; background:var(--s1);">
+        <input type="text" id="chatInput" placeholder="Ask a question..." style="flex:1; background:var(--s2); border:1px solid var(--b2); border-radius:8px; padding:8px 12px; color:var(--txt); font-family:inherit; font-size:13px; outline:none;" onkeypress="if(event.key==='Enter') sendChat()">
+        <button class="btn btn-primary" id="btnSendChat" onclick="sendChat()" style="padding:8px 16px; width:auto;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <!-- ══════════ TEAM / EMPLOYEES ══════════ -->
@@ -680,7 +705,23 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- ══════════ ANALYSIS & INSIGHTS ══════════ -->
+<!-- ══════════ MIS TAB ══════════ -->
+<div class="page" id="page-mis">
+  <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end">
+    <div>
+      <div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;color:var(--txt)">MIS Reports & Action Items</div>
+      <div style="font-size:12px;color:var(--m1);margin-top:4px">Summary of business performance and operational pointers.</div>
+    </div>
+    <button class="btn btn-ghost" style="padding:8px 14px;border-radius:12px" onclick="syncAllSheets()">Sync Data</button>
+  </div>
+
+  <div id="misContent">
+    <div class="card card-body" style="text-align:center;padding:40px">
+      <div style="font-size:14px;color:var(--m1)">Please ensure you have a tab named "MIS" in your Google Sheet.</div>
+      <div style="font-size:12px;color:var(--m1);margin-top:8px">Data will appear here automatically after syncing.</div>
+    </div>
+  </div>
+</div>
 <div class="page" id="page-analysis">
   <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end">
     <div>
@@ -1337,6 +1378,9 @@ function buildPageCharts(page){
   if(page === 'team' && window.buildTeamCharts) {
     buildTeamCharts();
   }
+  if(page === 'mis' && window.renderMIS) {
+    renderMIS();
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1354,8 +1398,9 @@ document.getElementById('navBar').addEventListener('click', function(e){
 });
 
 function switchSubTab(id, btn){
-  ['analysis','forecast','messages'].forEach(function(s){
-    document.getElementById('subtab-'+s).style.display = s===id?'block':'none';
+  ['analysis','forecast','messages','chat'].forEach(function(s){
+    var el = document.getElementById('subtab-'+s);
+    if(el) el.style.display = s===id?'flex':'none';
   });
   document.querySelectorAll('.stab-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
@@ -1369,29 +1414,50 @@ function pickMsg(btn){
 }
 
 // ═══════════════════════════════════════════════
-// 7. INTELLIGENCE
+// 7. INTELLIGENCE & CHAT
 // ═══════════════════════════════════════════════
 function buildCtx(){
-  var m = calcMetrics();
-  var monthName = 'Selected Month';
-  if(window.activeSheetId) {
-    var parts = window.activeSheetId.split('__');
-    if(parts.length > 1) monthName = parts[1];
+  var ctx = 'GLOBAL CONTEXT - YOU HAVE ACCESS TO ALL THIS DATA:\n\n';
+  
+  // 1. All Monthly Sheets
+  if(window.SHEET_DATA) {
+    Object.keys(SHEET_DATA).forEach(function(k){
+      var d = SHEET_DATA[k];
+      var rev = sum(d.REV), rm = sum(d.RM), cp = sum(d.CP);
+      var margin = rev ? ((rev - rm - cp)/rev)*100 : 0;
+      ctx += 'Month ['+d.tabName+']: Rev ₹'+fmtN(rev)+' | Indent '+(rm+cp)+' ('+margin.toFixed(1)+'%) | Target ₹'+fmtN(d.TARGET)+'\n';
+    });
   }
-  return 'SJP Store MIS Data \u2014 ' + monthName + ' ('+m.n+' days done, '+m.dLeft+' days left):\n'
-    +'- MTD Revenue: \u20b9'+fmtN(m.tRev)+' | Target: \u20b9'+fmtN(TARGET)+' | Achievement: '+m.ach.toFixed(1)+'%\n'
-    +'- Daily Avg: \u20b9'+fmtN(rnd(m.dAvg))+' | Last 7d Avg: \u20b9'+fmtN(rnd(m.l7avg))+'\n'
-    +'- Projected Month-end: \u20b9'+fmtN(rnd(m.proj))+' | Revenue Gap: \u20b9'+fmtN(rnd(m.gap))+'\n'
-    +'- Required per day ('+m.dLeft+' days left): \u20b9'+fmtN(rnd(m.rpd))+'\n'
-    +'- MTD Indent (RM+CP): \u20b9'+fmtN(m.tInd)+' = '+m.ipcMTD.toFixed(1)+'% rev (target 29%)\n'
-    +'- Gas: \u20b9'+fmtN(m.tGasV)+' ('+fmtN(m.tGasU,0)+' units) | Water: \u20b9'+fmtN(m.tWatV)+' ('+fmtN(m.tWatQ,1)+' tankers)\n'
-    +'- Packaging: \u20b9'+fmtN(m.tPkg)+' | HK: \u20b9'+fmtN(m.tHK)+' | Petty Cash: \u20b9'+fmtN(m.tPetty)+'\n'
-    +'- Weekend Avg: \u20b9'+fmtN(rnd(m.wkndAvg))+' | Weekday Avg: \u20b9'+fmtN(rnd(m.wkdyAvg))+'\n'
-    +'- Top 3 days: '+m.top3.map(function(d){ return d.d+'=\u20b9'+fmtN(d.v); }).join(', ')+'\n'
-    +'- Last 3 days: '+REV.slice(-3).map(function(v){ return '\u20b9'+fmtN(v); }).join(', ');
+  
+  // 2. Active Month Detailed Metrics
+  var m = calcMetrics();
+  var monthName = window.activeSheetId ? window.activeSheetId.split('__')[1] : 'Selected';
+  ctx += '\nACTIVE MONTH DETAILED ('+monthName+'):\n'
+    +'- MTD Revenue: ₹'+fmtN(m.tRev)+' | Target: ₹'+fmtN(TARGET)+' | Achieved: '+m.ach.toFixed(1)+'%\n'
+    +'- Daily Avg: ₹'+fmtN(rnd(m.dAvg))+' | Last 7d Avg: ₹'+fmtN(rnd(m.l7avg))+'\n'
+    +'- Proj Month-end: ₹'+fmtN(rnd(m.proj))+' | Gap: ₹'+fmtN(rnd(m.gap))+'\n'
+    +'- Indent (RM+CP): ₹'+fmtN(m.tInd)+' = '+m.ipcMTD.toFixed(1)+'% (target 29%)\n'
+    +'- Gas: ₹'+fmtN(m.tGasV)+' | Water: ₹'+fmtN(m.tWatV)+'\n'
+    +'- Weekend Avg: ₹'+fmtN(rnd(m.wkndAvg))+' | Weekday Avg: ₹'+fmtN(rnd(m.wkdyAvg))+'\n';
+
+  // 3. MIS Data
+  if(window.MIS_DATA && window.MIS_DATA.length) {
+    ctx += '\nSTRATEGIC MIS DATA:\n';
+    window.MIS_DATA.slice(0, 15).forEach(function(r){ // Top 15 rows for brevity
+      if(r[0]) ctx += '- ' + r.join(' | ') + '\n';
+    });
+  }
+
+  // 4. Team Data
+  if(window.TEAM_DATA) {
+    ctx += '\nTEAM SUMMARY:\nTotal Staff: ' + window.TEAM_DATA.length + '\n';
+  }
+
+  return ctx;
 }
 
-var SYS_PROMPT = 'You are a sharp QSR operations analyst for Jagan, Senior Ops Manager at Babai Tiffin, Bangalore. Give direct, data-driven insights using \u20b9 figures. Be concise. Do not use the word AI anywhere in your response.';
+var SYS_PROMPT = 'You are an elite AI Operations Analyst for Babai Tiffins. You have full access to cross-month revenue, costs, MIS P&L, and Team data. Provide sharp, direct answers. Do not use the word AI. Use ₹ formatting.';
+var chatHistory = [];
 
 function runIntel(mode){
   var apiKey = localStorage.getItem('sjp_api_key');
@@ -1456,6 +1522,72 @@ function runIntel(mode){
   .finally(function(){
     btn.disabled = false;
     btn.innerHTML = orig;
+  });
+}
+
+function sendChat() {
+  var apiKey = localStorage.getItem('sjp_api_key');
+  if(!apiKey){ openModal('apiModal'); return; }
+
+  var input = document.getElementById('chatInput');
+  var msg = input.value.trim();
+  if(!msg) return;
+
+  var histEl = document.getElementById('chatHistory');
+  var btn = document.getElementById('btnSendChat');
+  
+  // Append user message
+  histEl.innerHTML += '<div style="align-self:flex-end; background:var(--blu); padding:10px 14px; border-radius:12px; border-bottom-right-radius:2px; font-size:13px; line-height:1.5; color:#fff; max-width:85%;">' + msg + '</div>';
+  input.value = '';
+  btn.disabled = true;
+  histEl.scrollTop = histEl.scrollHeight;
+
+  // Build messages array
+  var messages = [
+    { role: 'system', content: SYS_PROMPT + '\n\n' + buildCtx() }
+  ];
+  
+  // Append history (last 6 messages to save context limit)
+  chatHistory.slice(-6).forEach(function(h) {
+    messages.push(h);
+  });
+  
+  messages.push({ role: 'user', content: msg });
+  chatHistory.push({ role: 'user', content: msg });
+
+  // Add a loading bubble
+  var loadingId = 'loading_' + Date.now();
+  histEl.innerHTML += '<div id="'+loadingId+'" style="align-self:flex-start; background:var(--s2); padding:10px 14px; border-radius:12px; border-bottom-left-radius:2px; font-size:13px; color:var(--m1); max-width:85%;">Thinking...</div>';
+  histEl.scrollTop = histEl.scrollHeight;
+
+  fetch('https://api.groq.com/openai/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+    body: JSON.stringify({ model: 'llama-3.3-70b-versatile', messages: messages, temperature: 0.2 })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    var el = document.getElementById(loadingId);
+    if(el) el.remove();
+    
+    if(data.error) throw new Error(data.error.message);
+    var text = (data.choices && data.choices[0].message.content) || 'No response.';
+    
+    // Format bold and line breaks
+    var formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+    
+    histEl.innerHTML += '<div style="align-self:flex-start; background:var(--s2); padding:10px 14px; border-radius:12px; border-bottom-left-radius:2px; font-size:13px; line-height:1.5; color:var(--txt); max-width:85%;">' + formattedText + '</div>';
+    chatHistory.push({ role: 'assistant', content: text });
+  })
+  .catch(function(e){
+    var el = document.getElementById(loadingId);
+    if(el) el.remove();
+    histEl.innerHTML += '<div style="align-self:flex-start; background:#450a0a; color:#f87171; padding:10px 14px; border-radius:12px; border-bottom-left-radius:2px; font-size:13px; max-width:85%;">Error: ' + e.message + '</div>';
+  })
+  .finally(function(){
+    btn.disabled = false;
+    histEl.scrollTop = histEl.scrollHeight;
+    input.focus();
   });
 }
 

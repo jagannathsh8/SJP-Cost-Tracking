@@ -124,6 +124,11 @@ function parseAppsScriptTabs(json){
       Object.keys(dynamicRows).forEach(function(dr){ dynamicRows[dr].push(getVal(findRow(dr), dKey)); });
     }
     
+    if(tab.name.toUpperCase() === 'MIS') {
+      window.MIS_DATA = tab.rawData;
+      return;
+    }
+
     if(tab.name.toLowerCase().indexOf('employee') !== -1) {
       window.TEAM_DATA = data;
       return;
@@ -906,6 +911,87 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 // ═══════════════════════════════════════════════
+// MIS & STRATEGIC OVERVIEW
+// ═══════════════════════════════════════════════
+
+function renderMIS() {
+  var data = window.MIS_DATA;
+  var container = document.getElementById('misContent');
+  if(!container) return;
+  
+  if(!data || !data.length) {
+    container.innerHTML = '<div class="card card-body" style="text-align:center;padding:40px">'
+      +'<div style="font-size:14px;color:var(--m1)">No MIS data found. Please sync the "MIS" tab from your sheet.</div>'
+      +'</div>';
+    return;
+  }
+
+  var html = '<div class="stack">';
+  
+  // 1. Detect Financial P&L Structure (Category, Sub Category, Run Rate...)
+  var isPL = data[1] && String(data[1][0]).toLowerCase().indexOf('category') !== -1;
+  
+  // 2. Action Pointers Section (Look for indicators)
+  var pointers = [];
+  data.forEach(function(row){
+    var txt = String(row[0] || '');
+    if(txt.toLowerCase().indexOf('pointer') !== -1 || txt.toLowerCase().indexOf('action') !== -1 || txt.indexOf('>') === 0 || txt.indexOf('•') === 0) {
+      pointers.push(txt.replace(/^[>•]\s*/,''));
+    }
+  });
+
+  if(pointers.length > 0) {
+    html += '<div class="card card-body" style="margin-bottom:12px;border-left:4px solid var(--amb)">'
+      +'<div class="card-title" style="color:var(--amb)">🚀 Strategic Action Pointers</div>'
+      +'<div style="display:flex;flex-direction:column;gap:10px">';
+    pointers.forEach(function(p){
+      html += '<div style="display:flex;gap:12px;align-items:flex-start;font-size:13px;line-height:1.6">'
+        +'<span style="color:var(--amb);font-weight:900">→</span><span>'+p+'</span></div>';
+    });
+    html += '</div></div>';
+  }
+
+  // 3. Render Views
+  if(isPL) {
+    html += '<div class="card card-body">'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">'
+        +'<div class="card-title" style="margin:0">Financial P&L Summary</div>'
+        +'<div style="font-size:10px;color:var(--m1);text-transform:uppercase;letter-spacing:1px">Run Rate vs Target</div>'
+      +'</div>'
+      +'<div class="tbl-scroll"><table>'
+      +'<thead><tr><th>Category</th><th>Sub Category</th><th class="num">Run Rate</th><th class="num">%</th><th class="num">Target</th><th class="num">%</th></tr></thead><tbody>';
+
+    for(var i=2; i<data.length; i++) {
+      var row = data[i];
+      if(!row[0] && !row[1]) continue;
+      var cat = row[0], sub = row[1], rrVal = row[2], rrPct = row[3], tgVal = row[5], tgPct = row[6];
+      var isHeader = cat && !sub;
+      var style = isHeader ? 'background:var(--s2);font-weight:800;color:var(--txt)' : '';
+      
+      html += '<tr style="'+style+'"><td>'+(cat||'')+'</td><td style="font-size:11px">'+(sub||'')+'</td>'
+        +'<td class="num">'+(typeof rrVal === 'number' ? '₹'+fmtN(rrVal) : (rrVal||''))+'</td>'
+        +'<td class="num" style="color:var(--m1)">'+(rrPct ? (typeof rrPct === 'number' ? (rrPct*100).toFixed(1)+'%' : rrPct) : '')+'</td>'
+        +'<td class="num">'+(typeof tgVal === 'number' ? '₹'+fmtN(tgVal) : (tgVal||''))+'</td>'
+        +'<td class="num" style="color:var(--m1)">'+(tgPct ? (typeof tgPct === 'number' ? (tgPct*100).toFixed(1)+'%' : tgPct) : '')+'</td></tr>';
+    }
+    html += '</tbody></table></div></div>';
+  } else {
+    html += '<div class="card card-body"><div class="card-title">MIS Details</div><div class="tbl-scroll"><table>';
+    data.forEach(function(row, i){
+      html += '<tr>'; row.forEach(function(cell){
+        var style = i === 0 ? 'background:var(--s2);font-weight:800;color:var(--txt)' : '';
+        var isNum = typeof cell === 'number';
+        html += '<td style="'+style+';'+(isNum?'text-align:right':'')+'">'+(isNum ? fmtN(cell) : (cell||''))+'</td>';
+      }); html += '</tr>';
+    });
+    html += '</table></div></div>';
+  }
+
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════
 // ANALYSIS & DEEP INSIGHTS
 // ═══════════════════════════════════════════════
 
@@ -914,14 +1000,13 @@ function getActiveSheet() {
 }
 
 function buildAnOverview() {
-  var s = getActiveSheet();
-  if(!s || !s.REV || !s.REV.length) return;
+  if(!window.REV || !window.REV.length) return;
   
-  var rev = s.REV;
-  var rm  = s.RM || [];
-  var cp  = s.CP || [];
-  var pkg = s.PKG || [];
-  var gas = s.GASV || [];
+  var rev = window.REV;
+  var rm  = window.RM || [];
+  var cp  = window.CP || [];
+  var pkg = window.PKG || [];
+  var gas = window.GASV || [];
   
   var totRev = sum(rev);
   var totVar = sum(rm) + sum(cp) + sum(pkg) + sum(gas);
@@ -932,15 +1017,15 @@ function buildAnOverview() {
   document.getElementById('anKpiMarginSub').innerText = 'Efficiency: ' + (margin > 30 ? 'High' : 'Optimal') + ' range';
   
   // 2. Run Rate (Linear Projection)
-  var daysElapsed = rev.filter(v => v > 0).length || 1;
-  var monthDays = s.MONTH_DAYS || 30;
+  var daysElapsed = rev.filter(function(v){return v > 0}).length || 1;
+  var monthDays = window.MONTH_DAYS || 30;
   var dAvg = totRev / daysElapsed;
   var runRate = dAvg * monthDays;
   document.getElementById('anKpiRunRate').innerText = '₹' + fmtN(runRate);
   document.getElementById('anKpiRunRateSub').innerText = 'Pace: ₹' + fmtN(dAvg) + ' / day';
   
   // 3. Peak Day
-  var peak = Math.max(...rev);
+  var peak = Math.max.apply(null, rev);
   document.getElementById('anKpiPeak').innerText = '₹' + fmtN(peak);
   document.getElementById('anKpiPeakSub').innerText = 'Max potential recorded';
 
@@ -956,7 +1041,7 @@ function buildAnOverview() {
   if(cTrend) CI.chAnRevTrend = new Chart(cTrend, {
     type: 'line',
     data: {
-      labels: s.DATES.map(d => d.split(' ')[1] || d),
+      labels: window.DATES.map(function(d){return d.split(' ')[1] || d}),
       datasets: [
         { label: 'Daily Revenue', data: rev, borderColor: 'rgba(96, 165, 250, 0.2)', borderWidth: 1, pointRadius: 0, fill: false },
         { label: 'Momentum (7d)', data: roll7, borderColor: '#3b82f6', borderWidth: 3, pointRadius: 0, tension: 0.4, fill: false }
@@ -966,14 +1051,14 @@ function buildAnOverview() {
       responsive:true, maintainAspectRatio:false, 
       plugins:{legend:{display:false}, tooltip:{mode:'index', intersect:false}}, 
       scales:{
-        y:{grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#64748b', callback: v => (v/1000).toFixed(0)+'k'}},
+        y:{grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#64748b', callback: function(v){return (v/1000).toFixed(0)+'k'}}},
         x:{grid:{display:false}, ticks:{color:'#64748b', maxTicksLimit: 10}}
       }
     }
   });
 
   // 5. Daily Margin Trend Chart
-  var dailyMargins = rev.map((r, i) => {
+  var dailyMargins = rev.map(function(r, i) {
     if(!r) return 0;
     var v = (rm[i]||0) + (cp[i]||0) + (pkg[i]||0) + (gas[i]||0);
     return ((r - v) / r) * 100;
@@ -984,7 +1069,7 @@ function buildAnOverview() {
   if(cMargin) CI.chAnMargin = new Chart(cMargin, {
     type: 'line',
     data: {
-      labels: s.DATES.map(d => d.split(' ')[1] || d),
+      labels: window.DATES.map(function(d){return d.split(' ')[1] || d}),
       datasets: [{
         label: 'Margin %',
         data: dailyMargins,
@@ -996,7 +1081,7 @@ function buildAnOverview() {
       responsive:true, maintainAspectRatio:false, 
       plugins:{legend:{display:false}}, 
       scales:{
-        y:{grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#64748b', callback:v=>v+'%'}},
+        y:{grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#64748b', callback:function(v){return v+'%'}}},
         x:{grid:{display:false}, ticks:{color:'#64748b', maxTicksLimit: 10}}
       }
     }
@@ -1004,20 +1089,19 @@ function buildAnOverview() {
 }
 
 function buildAnBenchmark() {
-  var s = getActiveSheet();
-  if(!s || !s.REV || !s.REV.length) return;
+  if(!window.REV || !window.REV.length) return;
   
-  var todayIdx = s.REV.findLastIndex(v => v > 0);
-  if(todayIdx === -1) todayIdx = s.REV.length - 1;
+  var todayIdx = window.REV.findLastIndex(function(v){return v > 0});
+  if(todayIdx === -1) todayIdx = window.REV.length - 1;
   
-  var todayVal = s.REV[todayIdx];
+  var todayVal = window.REV[todayIdx];
   function getDayOfWeek(dateStr) {
     var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
     var parts = dateStr.split(' ');
     return parts.length > 0 ? days.indexOf(parts[0]) : -1;
   }
 
-  var targetDOW = getDayOfWeek(s.DATES[todayIdx]);
+  var targetDOW = getDayOfWeek(window.DATES[todayIdx]);
   
   var sameDOWData = [];
   Object.keys(SHEET_DATA).forEach(function(k) {
