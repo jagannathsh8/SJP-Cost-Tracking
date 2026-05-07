@@ -942,6 +942,7 @@ function switchMisTab(id, btn) {
 }
 
 // KEY FIX: parentCat propagates down to sub-rows
+// KEY FIX: parentCat propagates down to sub-rows
 function parseMisRows(data) {
   var rows = [], currentCat = '';
   for(var i=2; i<data.length; i++) {
@@ -982,7 +983,11 @@ function renderMIS() {
   });
   var totRowCost = rows.find(function(r){ 
     var full = (r.cat + ' ' + r.sub).toLowerCase();
-    return full.indexOf('total') !== -1 && (full.indexOf('expenditure') !== -1 || full.indexOf('cost') !== -1 || full.indexOf('expense') !== -1);
+    return full.indexOf('total') !== -1 && (full.indexOf('expenditure') !== -1 || full.indexOf('cost') !== -1 || full.indexOf('expense') !== -1 || full.indexOf('operating cost') !== -1);
+  });
+  var totRowNOI = rows.find(function(r){ 
+    var full = (r.cat + ' ' + r.sub).toLowerCase();
+    return full.indexOf('net operating income') !== -1 || full.indexOf('operating profit') !== -1;
   });
 
   var revSubs  = rows.filter(function(r){ 
@@ -994,21 +999,29 @@ function renderMIS() {
 
   var totRev   = totRowRev ? totRowRev.rr : revSubs.reduce(function(a,r){return a+r.rr;},0);
   var totCost  = totRowCost ? totRowCost.rr : costSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totNOI   = totRowNOI ? totRowNOI.rr : (totRev - totCost);
+  var noiPct   = totRev > 0 ? (totNOI / totRev * 100) : 0;
   var totTgt   = totRowRev ? totRowRev.tg : revSubs.reduce(function(a,r){return a+r.tg;},0);
-  var margin   = totRev>0 ? ((totRev-totCost)/totRev*100) : 0;
   var ach      = totTgt>0 ? (totRev/totTgt*100) : 0;
 
   var kpiEl = document.getElementById('misKpiStrip');
-  if(kpiEl) kpiEl.innerHTML = [
-    {l:'RUN RATE REVENUE',  v:'\u20b9'+fmtN(totRev),      c:'var(--grn)',  s:totRowRev ? 'From: '+(totRowRev.sub||totRowRev.cat) : 'Calculated Sum'},
-    {l:'TOTAL COST BASE',   v:'\u20b9'+fmtN(totCost),     c:'var(--red)',  s:totRowCost ? 'From: '+(totRowCost.sub||totRowCost.cat) : 'Calculated Sum'},
-    {l:'OPERATING MARGIN',  v:margin.toFixed(1)+'%',       c:margin>30?'var(--grn)':'var(--amb)', s:'Profitability Ratio'},
-    {l:'TARGET ACHIEVEMENT',v:ach.toFixed(1)+'%',          c:ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)', s:'vs monthly target'},
-  ].map(function(k){
-    return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
-      +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
-      +'<div class="kpi-sub">'+k.s+'</div></div>';
-  }).join('');
+  if(kpiEl) {
+    kpiEl.style.display = 'grid';
+    kpiEl.style.gridTemplateColumns = 'repeat(5, 1fr)';
+    kpiEl.style.gap = '10px';
+    
+    kpiEl.innerHTML = [
+      {l:'RUN RATE REVENUE',    v:'\u20b9'+fmtN(totRev),      c:'var(--grn)',  s:totRowRev ? 'From: '+(totRowRev.sub||totRowRev.cat) : 'Calculated Sum'},
+      {l:'TOTAL EXPENDITURE',   v:'\u20b9'+fmtN(totCost),     c:'var(--red)',  s:totRowCost ? 'From: '+(totRowCost.sub||totRowCost.cat) : 'Calculated Sum'},
+      {l:'NET OPERATING INCOME',v:'\u20b9'+fmtN(totNOI),      c:'#facc15',     s:noiPct.toFixed(1)+'% of Revenue'},
+      {l:'OPS EFFICIENCY',      v:noiPct.toFixed(1)+'%',      c:noiPct>25?'var(--grn)':'var(--amb)', s:'Profit Conversion Rate'},
+      {l:'TARGET ACHIEVEMENT',  v:ach.toFixed(1)+'%',          c:ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)', s:'vs monthly target'},
+    ].map(function(k){
+      return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
+        +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
+        +'<div class="kpi-sub">'+k.s+'</div></div>';
+    }).join('');
+  }
 
   // Action Pointers
   var pointers = [];
