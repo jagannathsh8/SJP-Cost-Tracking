@@ -477,22 +477,27 @@ tbody tr:last-child td{border-bottom:none}
   <div class="card">
     <div class="card-body" style="padding-bottom:0"><div class="card-title">Day-by-Day MIS Log — SJP April 2026</div></div>
     <style>
-      .tbl-freeze { max-height: 65vh; overflow: auto; position: relative; }
-      .tbl-freeze table { border-collapse: separate; border-spacing: 0; min-width: 1000px; }
-      .tbl-freeze th { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 2px solid var(--b2); box-shadow: 0 2px 0 var(--b2); }
-      .tbl-freeze tfoot td { position: sticky; bottom: 0; z-index: 10; background: var(--bg); border-top: 2px solid var(--b2); box-shadow: 0 -2px 0 var(--b2); }
+      .tbl-freeze { max-height: 70vh; overflow: auto; position: relative; }
+      .tbl-freeze table { border-collapse: separate; border-spacing: 0; min-width: 1200px; font-size: 15px; }
+      .tbl-freeze th { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 2px solid var(--b2); box-shadow: 0 2px 0 var(--b2); padding: 12px; }
+      .tbl-freeze td { padding: 14px 12px; border-bottom: 1px solid var(--b1); }
+      .tbl-freeze tfoot td { position: sticky; bottom: 0; z-index: 20; background: var(--bg); border-top: 2px solid var(--b2); box-shadow: 0 -2px 0 var(--b2); }
       
-      /* Freeze first 4 columns exactly */
-      .tbl-freeze th:nth-child(1), .tbl-freeze td:nth-child(1) { position: sticky; left: 0; z-index: 11; background: #0d1117; width: 100px; min-width: 100px; max-width: 100px; }
-      .tbl-freeze th:nth-child(2), .tbl-freeze td:nth-child(2) { position: sticky; left: 100px; z-index: 11; background: #0d1117; width: 120px; min-width: 120px; max-width: 120px; }
-      .tbl-freeze th:nth-child(3), .tbl-freeze td:nth-child(3) { position: sticky; left: 220px; z-index: 11; background: #0d1117; width: 150px; min-width: 150px; max-width: 150px; }
-      .tbl-freeze th:nth-child(4), .tbl-freeze td:nth-child(4) { position: sticky; left: 370px; z-index: 11; background: #0d1117; width: 150px; min-width: 150px; max-width: 150px; }
+      /* Freeze ONLY first column (Date) */
+      .tbl-freeze th:nth-child(1), .tbl-freeze td:nth-child(1) { 
+        position: sticky !important; 
+        left: 0; 
+        z-index: 21; 
+        background: #0d1117 !important; 
+        width: 110px; min-width: 110px; max-width: 110px; 
+        border-right: 2px solid var(--b2);
+      }
       
-      /* Header intersections need higher z-index */
-      .tbl-freeze th:nth-child(1), .tbl-freeze th:nth-child(2), .tbl-freeze th:nth-child(3), .tbl-freeze th:nth-child(4) { z-index: 12; background: var(--bg); }
-      .tbl-freeze tfoot td:nth-child(1), .tbl-freeze tfoot td:nth-child(2), .tbl-freeze tfoot td:nth-child(3), .tbl-freeze tfoot td:nth-child(4) { z-index: 12; background: var(--bg); }
+      /* Header intersection (Row 1, Col 1) needs highest z-index */
+      .tbl-freeze th:nth-child(1) { z-index: 25; background: var(--s2) !important; }
+      .tbl-freeze tfoot td:nth-child(1) { z-index: 25; background: var(--s2) !important; }
       
-      .tbl-freeze td { border-bottom: 1px solid var(--b1); }
+      .tbl-freeze .num { text-align: right; }
     </style>
     <div class="tbl-freeze" style="padding:0 0 16px">
       <table>
@@ -979,7 +984,9 @@ function calcMetrics(){
   var tWatV=sum(WATV), tWatQ=sum(WATQ), tPetty=sum(PETTY);
   var dLeft  = Math.max(MONTH_DAYS-n,0);
   var dAvg   = tRev/n;
-  var proj   = dAvg*MONTH_DAYS;
+  // USE RUN RATE FROM SHEET IF AVAILABLE
+  var rrRev  = (window.RUN_RATES && (window.RUN_RATES['Net Revenue'] || window.RUN_RATES['Total Revenue'])) || 0;
+  var proj   = rrRev || (dAvg*MONTH_DAYS);
   var gap    = TARGET-tRev;
   var rpd    = gap/dLeft;
   var ach    = (tRev/TARGET)*100;
@@ -1843,6 +1850,15 @@ async function doSync(){
       inject(PKG,npk); inject(HK,nhk); inject(GASU,ngu); inject(GASV,ngv);
       inject(WATQ,nwq); inject(WATV,nwv); inject(PETTY,npt);
 
+      // Populate globals for MTD table
+      window.TARGETS = {}; window.RUN_RATES = {}; window.MTDS = {};
+      data.forEach(function(row){
+        var p = row.Particulars; if(!p) return;
+        window.TARGETS[p] = parseFloat(row['Target']) || 0;
+        window.RUN_RATES[p] = parseFloat(row['Run Rate']) || 0;
+        window.MTDS[p] = parseFloat(row['MTD']) || 0;
+      });
+
     } else {
       // ── Legacy CSV / gviz path ──
       var pubId = PUB_ID, gid = 0;
@@ -2188,6 +2204,6 @@ function switchAnTab(tab){
 
 
 </script>
-<script src="app.js?v=1.0.6"></script>
+<script src="app.js?v=1.0.8"></script>
 </body>
 </html>
