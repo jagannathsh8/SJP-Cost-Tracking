@@ -975,12 +975,20 @@ function renderMIS() {
   var isPL = data[1] && String(data[1][0]).toLowerCase().indexOf('category') !== -1;
   var rows = isPL ? parseMisRows(data) : [];
 
-  // Revenue = sum of revenue sub-rows; Cost = sum of non-revenue sub-rows
-  var revSubs  = rows.filter(function(r){ return !r.isHdr && isRevRow(r); });
-  var costSubs = rows.filter(function(r){ return !r.isHdr && !isRevRow(r) && r.rr>0; });
-  var totRev   = revSubs.reduce(function(a,r){return a+r.rr;},0);
-  var totCost  = costSubs.reduce(function(a,r){return a+r.rr;},0);
-  var totTgt   = revSubs.reduce(function(a,r){return a+r.tg;},0);
+  // KEY FIX: Differentiate between "Total" rows and individual "Head" rows
+  var totRowRev = rows.find(function(r){ return (r.cat+r.sub).toLowerCase().indexOf('total net revenue') !== -1; });
+  var totRowCost = rows.find(function(r){ return (r.cat+r.sub).toLowerCase().indexOf('total expenditure') !== -1 || (r.cat+r.sub).toLowerCase().indexOf('total cost') !== -1; });
+
+  var revSubs  = rows.filter(function(r){ 
+    return !r.isHdr && isRevRow(r) && (r.cat+r.sub).toLowerCase().indexOf('total') === -1; 
+  });
+  var costSubs = rows.filter(function(r){ 
+    return !r.isHdr && !isRevRow(r) && r.rr>0 && (r.cat+r.sub).toLowerCase().indexOf('total') === -1; 
+  });
+
+  var totRev   = totRowRev ? totRowRev.rr : revSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totCost  = totRowCost ? totRowCost.rr : costSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totTgt   = totRowRev ? totRowRev.tg : revSubs.reduce(function(a,r){return a+r.tg;},0);
   var margin   = totRev>0 ? ((totRev-totCost)/totRev*100) : 0;
   var ach      = totTgt>0 ? (totRev/totTgt*100) : 0;
 
