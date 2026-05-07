@@ -477,7 +477,19 @@ tbody tr:last-child td{border-bottom:none}
   <div class="card">
     <div class="card-body" style="padding-bottom:0"><div class="card-title">Day-by-Day MIS Log — SJP April 2026</div></div>
     <style>
-      .tbl-freeze { max-height: 70vh; overflow: auto; position: relative; }
+      .tbl-freeze { 
+        max-height: 88vh; 
+        overflow: auto; 
+        position: relative;
+        width: calc(100vw - 32px); /* Full width minus main padding */
+        margin-left: 0;
+      }
+      @media(min-width: 1000px) {
+        .tbl-freeze {
+          width: calc(100vw - 60px);
+          margin-left: calc(-50vw + 50% + 15px); /* Center it while being wider than 960px */
+        }
+      }
       .tbl-freeze table { border-collapse: separate; border-spacing: 0; min-width: 1200px; font-size: 15px; }
       .tbl-freeze th { position: sticky; top: 0; z-index: 20; background: var(--bg); border-bottom: 2px solid var(--b2); box-shadow: 0 2px 0 var(--b2); padding: 12px; }
       .tbl-freeze td { padding: 14px 12px; border-bottom: 1px solid var(--b1); }
@@ -2204,6 +2216,6 @@ function switchAnTab(tab){
 
 
 </script>
-<script src="app.js?v=1.0.8"></script>
+<script src="app.js?v=1.0.9"></script>
 </body>
 </html>
