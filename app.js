@@ -976,8 +976,14 @@ function renderMIS() {
   var rows = isPL ? parseMisRows(data) : [];
 
   // KEY FIX: Differentiate between "Total" rows and individual "Head" rows
-  var totRowRev = rows.find(function(r){ return (r.cat+r.sub).toLowerCase().indexOf('total net revenue') !== -1; });
-  var totRowCost = rows.find(function(r){ return (r.cat+r.sub).toLowerCase().indexOf('total expenditure') !== -1 || (r.cat+r.sub).toLowerCase().indexOf('total cost') !== -1; });
+  var totRowRev = rows.find(function(r){ 
+    var full = (r.cat + ' ' + r.sub).toLowerCase();
+    return full.indexOf('total') !== -1 && (full.indexOf('revenue') !== -1 || full.indexOf('income') !== -1);
+  });
+  var totRowCost = rows.find(function(r){ 
+    var full = (r.cat + ' ' + r.sub).toLowerCase();
+    return full.indexOf('total') !== -1 && (full.indexOf('expenditure') !== -1 || full.indexOf('cost') !== -1 || full.indexOf('expense') !== -1);
+  });
 
   var revSubs  = rows.filter(function(r){ 
     return !r.isHdr && isRevRow(r) && (r.cat+r.sub).toLowerCase().indexOf('total') === -1; 
@@ -994,10 +1000,10 @@ function renderMIS() {
 
   var kpiEl = document.getElementById('misKpiStrip');
   if(kpiEl) kpiEl.innerHTML = [
-    {l:'Run Rate Revenue',  v:'\u20b9'+fmtN(totRev),      c:'var(--grn)',  s:'Sum of all revenue streams'},
-    {l:'Total Cost Base',   v:'\u20b9'+fmtN(totCost),     c:'var(--red)',  s:'Sum of all cost heads'},
-    {l:'Operating Margin',  v:margin.toFixed(1)+'%',       c:margin>30?'var(--grn)':'var(--amb)', s:'Revenue minus costs'},
-    {l:'Target Achievement',v:ach.toFixed(1)+'%',          c:ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)', s:'vs monthly target'},
+    {l:'RUN RATE REVENUE',  v:'\u20b9'+fmtN(totRev),      c:'var(--grn)',  s:totRowRev ? 'From: '+(totRowRev.sub||totRowRev.cat) : 'Calculated Sum'},
+    {l:'TOTAL COST BASE',   v:'\u20b9'+fmtN(totCost),     c:'var(--red)',  s:totRowCost ? 'From: '+(totRowCost.sub||totRowCost.cat) : 'Calculated Sum'},
+    {l:'OPERATING MARGIN',  v:margin.toFixed(1)+'%',       c:margin>30?'var(--grn)':'var(--amb)', s:'Profitability Ratio'},
+    {l:'TARGET ACHIEVEMENT',v:ach.toFixed(1)+'%',          c:ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)', s:'vs monthly target'},
   ].map(function(k){
     return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
       +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
