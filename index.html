@@ -707,21 +707,83 @@ tbody tr:last-child td{border-bottom:none}
 
 <!-- ══════════ MIS TAB ══════════ -->
 <div class="page" id="page-mis">
-  <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end">
+  <!-- Header -->
+  <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
     <div>
-      <div style="font-size:24px;font-weight:900;letter-spacing:-0.5px;color:var(--txt)">MIS Reports & Action Items</div>
-      <div style="font-size:12px;color:var(--m1);margin-top:4px">Summary of business performance and operational pointers.</div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:var(--txt)">MIS Intelligence Centre</div>
+      <div style="font-size:12px;color:var(--m1);margin-top:3px">P&L · Visuals · Advisory · Business Intelligence</div>
     </div>
-    <button class="btn btn-ghost" style="padding:8px 14px;border-radius:12px" onclick="syncAllSheets()">Sync Data</button>
+    <button class="btn btn-ghost" style="padding:8px 14px;border-radius:12px" onclick="syncAllSheets()">🔄 Sync</button>
   </div>
 
-  <div id="misContent">
+  <!-- Sub-Tab Bar -->
+  <div class="stab-bar" style="margin-bottom:20px;background:var(--s1);padding:5px;border-radius:14px;border:1px solid var(--b1)">
+    <button class="stab-btn active" id="misBtnPL"       onclick="switchMisTab('pl',this)">📋 P&amp;L Data</button>
+    <button class="stab-btn"        id="misBtnVisuals"  onclick="switchMisTab('visuals',this)">📊 Visuals</button>
+    <button class="stab-btn"        id="misBtnAdvice"   onclick="switchMisTab('advice',this)">🧠 Analysis</button>
+    <button class="stab-btn"        id="misBtnBI"       onclick="switchMisTab('bi',this)">🎯 Intelligence</button>
+  </div>
+
+  <!-- TAB 1: P&L Data -->
+  <div id="misTab-pl">
+    <!-- KPI Strip -->
+    <div id="misKpiStrip" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+    <!-- Action Pointers -->
+    <div id="misActionPointers"></div>
+    <!-- P&L Table -->
+    <div id="misPLTable"></div>
+  </div>
+
+  <!-- TAB 2: Visuals -->
+  <div id="misTab-visuals" style="display:none">
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card card-body">
+        <div class="card-title">Revenue vs Cost Structure</div>
+        <div style="position:relative;height:230px"><canvas id="chartMisRevCost"></canvas></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-title">Cost Category Breakdown</div>
+        <div style="position:relative;height:230px"><canvas id="chartMisCostPie"></canvas></div>
+      </div>
+    </div>
+    <div class="grid2" style="margin-bottom:14px">
+      <div class="card card-body">
+        <div class="card-title">Run Rate vs Target (All Rows)</div>
+        <div style="position:relative;height:220px"><canvas id="chartMisRRvsTgt"></canvas></div>
+      </div>
+      <div class="card card-body">
+        <div class="card-title">P&amp;L Waterfall View</div>
+        <div style="position:relative;height:220px"><canvas id="chartMisWaterfall"></canvas></div>
+      </div>
+    </div>
+    <div class="card card-body">
+      <div class="card-title">MTD Progress Tracker (All Categories)</div>
+      <div style="position:relative;height:200px"><canvas id="chartMisMTD"></canvas></div>
+    </div>
+  </div>
+
+  <!-- TAB 3: Analysis & Advice -->
+  <div id="misTab-advice" style="display:none">
+    <div id="misAdviceContent">
+      <div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">Sync data first to generate analysis.</div>
+    </div>
+  </div>
+
+  <!-- TAB 4: Business Intelligence -->
+  <div id="misTab-bi" style="display:none">
+    <div id="misBIContent">
+      <div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">Sync data first to view intelligence.</div>
+    </div>
+  </div>
+
+  <!-- Fallback if no data -->
+  <div id="misContent" style="display:none">
     <div class="card card-body" style="text-align:center;padding:40px">
       <div style="font-size:14px;color:var(--m1)">Please ensure you have a tab named "MIS" in your Google Sheet.</div>
-      <div style="font-size:12px;color:var(--m1);margin-top:8px">Data will appear here automatically after syncing.</div>
     </div>
   </div>
 </div>
+
 <div class="page" id="page-analysis">
   <div style="margin-bottom:24px;display:flex;justify-content:space-between;align-items:flex-end">
     <div>
@@ -1727,7 +1789,8 @@ async function doSync(){
   try{
     if(isAppsScript){
       // ── Apps Script JSON API path ──
-      var r = await fetch(url);
+      var fetchUrl = url + (url.indexOf('?') !== -1 ? '&' : '?') + '_t=' + Date.now();
+      var r = await fetch(fetchUrl, { cache: 'no-store' });
       var json = await r.json();
       if(json.status !== 'success' || !json.data) throw new Error('Invalid response from Apps Script');
       var data = json.data;
@@ -2125,6 +2188,6 @@ function switchAnTab(tab){
 
 
 </script>
-<script src="app.js"></script>
+<script src="app.js?v=1.0.2"></script>
 </body>
 </html>
