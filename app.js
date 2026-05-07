@@ -1,4 +1,4 @@
-﻿"use strict";
+"use strict";
 
 var SHEET_COLORS = ['#f59e0b','#60a5fa','#22c55e','#a78bfa','#f87171','#38bdf8','#e879f9','#facc15','#4ade80','#fb923c','#818cf8','#2dd4bf'];
 var SHEET_DATA = {};
@@ -998,7 +998,7 @@ function renderMIS() {
 
   // Action Pointers
   var pointers = [];
-  data.forEach(function(r){ var t=String(r[0]||''); if(t.indexOf('>')===0||t.indexOf('\u2022')===0) pointers.push(t.replace(/^[>\u2022]\s*/','')); });
+  data.forEach(function(r){ var t=String(r[0]||''); if(t.indexOf('>')===0||t.indexOf('\u2022')===0) pointers.push(t.replace(/^[>\u2022]\s*/, '')); });
   var apEl = document.getElementById('misActionPointers');
   if(apEl) apEl.innerHTML = pointers.length ? '<div class="card card-body" style="margin-bottom:12px;border-left:4px solid var(--amb)">'
     +'<div class="card-title" style="color:var(--amb)">\ud83d\ude80 Strategic Action Pointers</div>'
