@@ -925,6 +925,7 @@ document.addEventListener('DOMContentLoaded', function(){
   }
 });
 // ═══════════════════════════════════════════════
+// ═══════════════════════════════════════════════
 // MIS 4-TAB INTELLIGENCE ENGINE
 // ═══════════════════════════════════════════════
 
@@ -940,24 +941,32 @@ function switchMisTab(id, btn) {
   if(id==='bi')      buildMisBI();
 }
 
+// KEY FIX: parentCat propagates down to sub-rows
 function parseMisRows(data) {
-  var rows = [];
+  var rows = [], currentCat = '';
   for(var i=2; i<data.length; i++) {
     var r = data[i];
     if(!r[0] && !r[1]) continue;
-    var rrRaw = r[2], tgRaw = r[5], mtdRaw = r[4];
+    var isHdr = !!(r[0] && !r[1]);
+    if(r[0]) currentCat = String(r[0]);
+    var rrRaw=r[2], tgRaw=r[5], mtdRaw=r[4];
     rows.push({
-      cat:   String(r[0]||''),
-      sub:   String(r[1]||''),
-      rr:    typeof rrRaw==='number' ? rrRaw : (parseFloat(rrRaw)||0),
+      cat:       String(r[0]||''),
+      sub:       String(r[1]||''),
+      parentCat: currentCat,
+      rr:    typeof rrRaw==='number'  ? rrRaw  : (parseFloat(rrRaw)||0),
       rrPct: r[3],
       mtd:   typeof mtdRaw==='number' ? mtdRaw : (parseFloat(mtdRaw)||0),
-      tg:    typeof tgRaw==='number' ? tgRaw : (parseFloat(tgRaw)||0),
+      tg:    typeof tgRaw==='number'  ? tgRaw  : (parseFloat(tgRaw)||0),
       tgPct: r[6],
-      isHdr: !!(r[0] && !r[1])
+      isHdr: isHdr
     });
   }
   return rows;
+}
+
+function isRevRow(r) {
+  return r.parentCat.toLowerCase().indexOf('revenue') !== -1;
 }
 
 function renderMIS() {
@@ -966,269 +975,303 @@ function renderMIS() {
   var isPL = data[1] && String(data[1][0]).toLowerCase().indexOf('category') !== -1;
   var rows = isPL ? parseMisRows(data) : [];
 
-  // ── KPI Strip ──
-  var totRev=0, totCost=0, totTgt=0;
-  rows.forEach(function(r){
-    if(r.cat.toLowerCase().indexOf('revenue')!==-1 && r.isHdr) totRev = r.rr;
-    if((r.cat.toLowerCase().indexOf('cost')!==-1||r.cat.toLowerCase().indexOf('expense')!==-1) && r.isHdr) totCost += r.rr;
-    if(r.cat.toLowerCase().indexOf('revenue')!==-1 && r.isHdr) totTgt = r.tg;
-  });
-  var margin = totRev>0 ? ((totRev-totCost)/totRev*100) : 0;
-  var ach = totTgt>0 ? (totRev/totTgt*100) : 0;
+  // Revenue = sum of revenue sub-rows; Cost = sum of non-revenue sub-rows
+  var revSubs  = rows.filter(function(r){ return !r.isHdr && isRevRow(r); });
+  var costSubs = rows.filter(function(r){ return !r.isHdr && !isRevRow(r) && r.rr>0; });
+  var totRev   = revSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totCost  = costSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totTgt   = revSubs.reduce(function(a,r){return a+r.tg;},0);
+  var margin   = totRev>0 ? ((totRev-totCost)/totRev*100) : 0;
+  var ach      = totTgt>0 ? (totRev/totTgt*100) : 0;
 
   var kpiEl = document.getElementById('misKpiStrip');
   if(kpiEl) kpiEl.innerHTML = [
-    {l:'Run Rate Revenue',  v:'₹'+fmtN(totRev),      c:'var(--grn)',  s:'Monthly run rate'},
-    {l:'Total Cost Base',   v:'₹'+fmtN(totCost),     c:'var(--red)',  s:'All cost heads'},
-    {l:'Operating Margin',  v:margin.toFixed(1)+'%',  c:margin>30?'var(--grn)':'var(--amb)', s:'Rev minus costs'},
-    {l:'Target Achievement',v:ach.toFixed(1)+'%',     c:ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)', s:'vs monthly target'},
+    {l:'Run Rate Revenue',  v:'\u20b9'+fmtN(totRev),      c:'var(--grn)',  s:'Sum of all revenue streams'},
+    {l:'Total Cost Base',   v:'\u20b9'+fmtN(totCost),     c:'var(--red)',  s:'Sum of all cost heads'},
+    {l:'Operating Margin',  v:margin.toFixed(1)+'%',       c:margin>30?'var(--grn)':'var(--amb)', s:'Revenue minus costs'},
+    {l:'Target Achievement',v:ach.toFixed(1)+'%',          c:ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)', s:'vs monthly target'},
   ].map(function(k){
     return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
       +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
       +'<div class="kpi-sub">'+k.s+'</div></div>';
   }).join('');
 
-  // ── Action Pointers ──
+  // Action Pointers
   var pointers = [];
-  data.forEach(function(r){ var t=String(r[0]||''); if(t.indexOf('>')===0||t.indexOf('•')===0||t.toLowerCase().indexOf('action')!==-1) pointers.push(t.replace(/^[>•]\s*/,'')); });
+  data.forEach(function(r){ var t=String(r[0]||''); if(t.indexOf('>')===0||t.indexOf('\u2022')===0) pointers.push(t.replace(/^[>\u2022]\s*/','')); });
   var apEl = document.getElementById('misActionPointers');
   if(apEl) apEl.innerHTML = pointers.length ? '<div class="card card-body" style="margin-bottom:12px;border-left:4px solid var(--amb)">'
-    +'<div class="card-title" style="color:var(--amb)">🚀 Strategic Action Pointers</div>'
+    +'<div class="card-title" style="color:var(--amb)">\ud83d\ude80 Strategic Action Pointers</div>'
     +'<div style="display:flex;flex-direction:column;gap:8px">'
-    +pointers.map(function(p){ return '<div style="display:flex;gap:10px;font-size:13px"><span style="color:var(--amb);font-weight:900">→</span><span>'+p+'</span></div>'; }).join('')
+    +pointers.map(function(p){ return '<div style="display:flex;gap:10px;font-size:13px"><span style="color:var(--amb);font-weight:900">\u2192</span><span>'+p+'</span></div>'; }).join('')
     +'</div></div>' : '';
 
-  // ── P&L Table ──
+  // P&L Table
   var tlEl = document.getElementById('misPLTable');
-  if(!tlEl) return;
+  if(!tlEl) { window._misRows=rows; window._misCostSubs=costSubs; window._misRevSubs=revSubs; return; }
   if(isPL && rows.length) {
     var tbl = '<div class="card card-body"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">'
-      +'<div class="card-title" style="margin:0">Financial P&L Summary</div>'
-      +'<div style="font-size:10px;color:var(--m1);text-transform:uppercase;letter-spacing:1px">Run Rate · MTD · Target</div></div>'
+      +'<div class="card-title" style="margin:0">Financial P&amp;L Summary</div>'
+      +'<div style="font-size:10px;color:var(--m1);text-transform:uppercase;letter-spacing:1px">Run Rate \u00b7 MTD \u00b7 Target</div></div>'
       +'<div class="tbl-scroll"><table><thead><tr>'
       +'<th>Category</th><th>Sub Category</th><th class="num">Run Rate</th><th class="num">RR%</th>'
       +'<th class="num">MTD</th><th class="num">Target</th><th class="num">Tgt%</th><th class="num">Status</th>'
       +'</tr></thead><tbody>';
     rows.forEach(function(r){
       var gap = r.tg>0 ? r.rr-r.tg : 0;
-      var status = r.tg>0 ? (r.rr>=r.tg?'<span style="color:var(--grn);font-weight:700">✓ On Track</span>':'<span style="color:var(--red);font-weight:700">⚠ Gap ₹'+fmtN(Math.abs(gap))+'</span>') : '';
-      var rowStyle = r.isHdr ? 'background:var(--s2);font-weight:800' : '';
-      tbl += '<tr style="'+rowStyle+'">'
-        +'<td>'+r.cat+'</td><td style="font-size:11px;color:var(--m1)">'+r.sub+'</td>'
-        +'<td class="num">'+(r.rr?'₹'+fmtN(r.rr):'')+'</td>'
-        +'<td class="num" style="color:var(--m1)">'+(r.rrPct?(typeof r.rrPct==='number'?(r.rrPct*100).toFixed(1)+'%':r.rrPct):'')+'</td>'
-        +'<td class="num">'+(r.mtd?'₹'+fmtN(r.mtd):'')+'</td>'
-        +'<td class="num">'+(r.tg?'₹'+fmtN(r.tg):'')+'</td>'
-        +'<td class="num" style="color:var(--m1)">'+(r.tgPct?(typeof r.tgPct==='number'?(r.tgPct*100).toFixed(1)+'%':r.tgPct):'')+'</td>'
-        +'<td class="num">'+status+'</td></tr>';
+      var st  = r.tg>0 ? (r.rr>=r.tg ? '<span style="color:var(--grn);font-weight:700">\u2713 On Track</span>'
+                                      : '<span style="color:var(--red);font-weight:700">\u26a0 \u20b9'+fmtN(Math.abs(gap))+'</span>') : '';
+      var bg  = r.isHdr ? 'background:var(--s2);font-weight:800' : '';
+      var pct = function(v){ return v ? (typeof v==='number' ? (v*100).toFixed(1)+'%' : v) : ''; };
+      tbl += '<tr style="'+bg+'"><td>'+r.cat+'</td><td style="font-size:11px;color:var(--m1)">'+r.sub+'</td>'
+        +'<td class="num">'+(r.rr?'\u20b9'+fmtN(r.rr):'')+'</td>'
+        +'<td class="num" style="color:var(--m1)">'+pct(r.rrPct)+'</td>'
+        +'<td class="num">'+(r.mtd?'\u20b9'+fmtN(r.mtd):'')+'</td>'
+        +'<td class="num">'+(r.tg?'\u20b9'+fmtN(r.tg):'')+'</td>'
+        +'<td class="num" style="color:var(--m1)">'+pct(r.tgPct)+'</td>'
+        +'<td class="num">'+st+'</td></tr>';
     });
     tbl += '</tbody></table></div></div>';
     tlEl.innerHTML = tbl;
   } else {
     var raw = '<div class="card card-body"><div class="card-title">MIS Raw Data</div><div class="tbl-scroll"><table>';
-    data.forEach(function(r,i){ raw+='<tr>'; r.forEach(function(c){ var s=i===0?'background:var(--s2);font-weight:800':''; raw+='<td style="'+s+'">'+(c||'')+'</td>'; }); raw+='</tr>'; });
+    data.forEach(function(r,i){ raw+='<tr>'; r.forEach(function(c){ raw+='<td style="'+(i===0?'background:var(--s2);font-weight:800':'')+'">'+(c||'')+'</td>'; }); raw+='</tr>'; });
     raw += '</table></div></div>';
     tlEl.innerHTML = raw;
   }
   window._misRows = rows;
+  window._misCostSubs = costSubs;
+  window._misRevSubs  = revSubs;
 }
 
 function buildMisVisuals() {
-  var rows = window._misRows;
-  if(!rows || !rows.length) return;
-  var cats=[], rrs=[], tgts=[], mtds=[];
-  rows.forEach(function(r){
-    if(r.rr>0||r.tg>0) { cats.push((r.sub||r.cat).substring(0,22)); rrs.push(r.rr); tgts.push(r.tg); mtds.push(r.mtd); }
+  var rows     = window._misRows     || [];
+  var costSubs = window._misCostSubs || [];
+  var revSubs  = window._misRevSubs  || [];
+  if(!rows.length) return;
+
+  var totRev  = revSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totCost = costSubs.reduce(function(a,r){return a+r.rr;},0);
+  var netMargin = totRev - totCost;
+
+  // Chart 1: Rev vs Cost vs Net Margin
+  killChart('chMisRevCost');
+  var c1=document.getElementById('chartMisRevCost');
+  if(c1) CI.chMisRevCost = new Chart(c1,{
+    type:'bar',
+    data:{labels:['Revenue','Total Costs','Net Margin'],
+      datasets:[{data:[totRev,totCost,netMargin],
+        backgroundColor:['rgba(34,197,94,0.75)','rgba(239,68,68,0.75)','rgba(59,130,246,0.75)'],borderRadius:10,barThickness:60}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '\u20b9'+fmtN(c.raw);}}}},
+      scales:{y:{ticks:{color:'#64748b',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.04)'}},
+              x:{ticks:{color:'#f8fafc',font:{size:13,weight:'700'}},grid:{display:false}}}}
   });
 
-  // Chart 1: Rev vs Cost Bar
-  var revRow = rows.find(function(r){ return r.cat.toLowerCase().indexOf('revenue')!==-1 && r.isHdr; });
-  var costRows = rows.filter(function(r){ return !r.isHdr && r.rr>0 && r.cat.toLowerCase().indexOf('revenue')===-1; });
-  killChart('chMisRevCost');
-  var c1 = document.getElementById('chartMisRevCost');
-  if(c1 && revRow) {
-    CI.chMisRevCost = new Chart(c1, {
-      type:'bar',
-      data:{ labels:['Revenue','Total Costs','Net Margin'],
-        datasets:[{data:[revRow.rr, costRows.reduce(function(a,r){return a+r.rr;},0), revRow.rr - costRows.reduce(function(a,r){return a+r.rr;},0)],
-          backgroundColor:['rgba(34,197,94,0.7)','rgba(239,68,68,0.7)','rgba(59,130,246,0.7)'], borderRadius:10}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '₹'+fmtN(c.raw);}}}},scales:{y:{ticks:{callback:function(v){return '₹'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.03)'}},x:{grid:{display:false}}}}
-    });
-  }
-
-  // Chart 2: Cost Pie
+  // Chart 2: Cost breakdown by category (group-level headers only)
+  var costHdrs = rows.filter(function(r){ return r.isHdr && !isRevRow(r) && r.rr>0; });
+  if(!costHdrs.length) costHdrs = costSubs.slice(0,8); // fallback to sub-rows
   killChart('chMisCostPie');
-  var c2 = document.getElementById('chartMisCostPie');
-  var pieCats = costRows.filter(function(r){return r.rr>0;});
-  if(c2 && pieCats.length) {
-    CI.chMisCostPie = new Chart(c2, {
-      type:'doughnut',
-      data:{ labels:pieCats.map(function(r){return r.sub||r.cat;}),
-        datasets:[{data:pieCats.map(function(r){return r.rr;}),backgroundColor:['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316'],borderWidth:0,hoverOffset:8}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:11},boxWidth:12}}}}
-    });
-  }
+  var c2=document.getElementById('chartMisCostPie');
+  var PIE_COLORS=['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#06b6d4','#f97316','#ec4899'];
+  if(c2 && costHdrs.length) CI.chMisCostPie = new Chart(c2,{
+    type:'doughnut',
+    data:{labels:costHdrs.map(function(r){return r.cat||r.sub;}),
+      datasets:[{data:costHdrs.map(function(r){return r.rr;}),
+        backgroundColor:PIE_COLORS,borderWidth:2,borderColor:'rgba(0,0,0,0.3)',hoverOffset:10}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:11},boxWidth:12,padding:8}}}}
+  });
 
-  // Chart 3: RR vs Target
+  // Chart 3: Cost category RR vs Target (top 10 cost sub-rows)
+  var top10 = costSubs.slice(0,10);
   killChart('chMisRRvsTgt');
-  var c3 = document.getElementById('chartMisRRvsTgt');
-  if(c3 && cats.length) {
-    CI.chMisRRvsTgt = new Chart(c3, {
-      type:'bar',
-      data:{ labels:cats,
-        datasets:[
-          {label:'Run Rate',data:rrs,backgroundColor:'rgba(59,130,246,0.7)',borderRadius:6},
-          {label:'Target',  data:tgts,backgroundColor:'rgba(245,158,11,0.4)',borderRadius:6}
-        ]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{y:{ticks:{callback:function(v){return '₹'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.03)'}},x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
-    });
-  }
+  var c3=document.getElementById('chartMisRRvsTgt');
+  if(c3 && top10.length) CI.chMisRRvsTgt = new Chart(c3,{
+    type:'bar',
+    data:{labels:top10.map(function(r){return (r.sub||r.cat).substring(0,20);}),
+      datasets:[
+        {label:'Run Rate',data:top10.map(function(r){return r.rr;}),backgroundColor:'rgba(59,130,246,0.7)',borderRadius:5},
+        {label:'Target',  data:top10.map(function(r){return r.tg;}),backgroundColor:'rgba(245,158,11,0.4)',borderRadius:5}
+      ]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+      scales:{y:{ticks:{color:'#64748b',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.04)'}},
+              x:{ticks:{color:'#94a3b8',font:{size:9},maxRotation:40},grid:{display:false}}}}
+  });
 
-  // Chart 4: Waterfall (Revenue - each cost step)
+  // Chart 4: Waterfall (Rev → Cost categories → Net)
+  var costCats = rows.filter(function(r){ return r.isHdr && !isRevRow(r) && r.rr>0; }).slice(0,6);
+  var wfLbl=['Revenue'], wfDat=[totRev], run=totRev;
+  costCats.forEach(function(r){ wfLbl.push(r.cat.substring(0,16)); wfDat.push(-r.rr); run-=r.rr; });
+  wfLbl.push('Net'); wfDat.push(run);
   killChart('chMisWaterfall');
-  var c4 = document.getElementById('chartMisWaterfall');
-  if(c4 && revRow) {
-    var wfLabels=['Revenue'], wfData=[revRow.rr], running=revRow.rr;
-    costRows.slice(0,5).forEach(function(r){
-      if(r.rr>0){ wfLabels.push(r.sub||r.cat); wfData.push(-r.rr); running-=r.rr; }
-    });
-    wfLabels.push('Net'); wfData.push(running);
-    CI.chMisWaterfall = new Chart(c4, {
-      type:'bar',
-      data:{ labels:wfLabels,
-        datasets:[{data:wfData,backgroundColor:wfData.map(function(v,i){return i===0||i===wfLabels.length-1?'rgba(34,197,94,0.7)':'rgba(239,68,68,0.6)';}),borderRadius:8}]},
-      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{ticks:{callback:function(v){return '₹'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.03)'}},x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
-    });
-  }
+  var c4=document.getElementById('chartMisWaterfall');
+  if(c4) CI.chMisWaterfall = new Chart(c4,{
+    type:'bar',
+    data:{labels:wfLbl,
+      datasets:[{data:wfDat,
+        backgroundColor:wfDat.map(function(v,i){return i===0||i===wfLbl.length-1?'rgba(34,197,94,0.75)':'rgba(239,68,68,0.65)';}),
+        borderRadius:7}]},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '\u20b9'+fmtN(Math.abs(c.raw));}}}},
+      scales:{y:{ticks:{color:'#64748b',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.04)'}},
+              x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+  });
 
-  // Chart 5: MTD Tracker
+  // Chart 5: MTD tracker (cost sub-rows only)
+  var mtdRows = costSubs.filter(function(r){return r.mtd>0;}).slice(0,10);
   killChart('chMisMTD');
-  var c5 = document.getElementById('chartMisMTD');
-  var mtdFiltered = rows.filter(function(r){ return r.mtd>0 && !r.isHdr; });
-  if(c5 && mtdFiltered.length) {
-    CI.chMisMTD = new Chart(c5, {
-      type:'bar',
-      data:{ labels:mtdFiltered.map(function(r){return (r.sub||r.cat).substring(0,18);}),
-        datasets:[
-          {label:'MTD Actual',data:mtdFiltered.map(function(r){return r.mtd;}),backgroundColor:'rgba(96,165,250,0.7)',borderRadius:6},
-          {label:'Target',    data:mtdFiltered.map(function(r){return r.tg; }),backgroundColor:'rgba(245,158,11,0.3)',borderRadius:6}
-        ]},
-      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},scales:{x:{ticks:{callback:function(v){return '₹'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.03)'}},y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
-    });
-  }
+  var c5=document.getElementById('chartMisMTD');
+  if(c5 && mtdRows.length) CI.chMisMTD = new Chart(c5,{
+    type:'bar',
+    data:{labels:mtdRows.map(function(r){return (r.sub||r.cat).substring(0,20);}),
+      datasets:[
+        {label:'MTD Actual',data:mtdRows.map(function(r){return r.mtd;}),backgroundColor:'rgba(96,165,250,0.75)',borderRadius:5},
+        {label:'Target',    data:mtdRows.map(function(r){return r.tg; }),backgroundColor:'rgba(245,158,11,0.3)', borderRadius:5}
+      ]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
+      scales:{x:{ticks:{color:'#64748b',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.04)'}},
+              y:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+  });
 }
 
 function buildMisAdvice() {
-  var rows = window._misRows;
+  var costSubs = window._misCostSubs || [];
+  var revSubs  = window._misRevSubs  || [];
   var el = document.getElementById('misAdviceContent');
   if(!el) return;
-  if(!rows || !rows.length) { el.innerHTML='<div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">No P&L data to analyse.</div>'; return; }
-
-  var revRow  = rows.find(function(r){ return r.cat.toLowerCase().indexOf('revenue')!==-1 && r.isHdr; });
-  var costRows= rows.filter(function(r){ return !r.isHdr && r.rr>0; });
-  var totRev  = revRow ? revRow.rr : 0;
-  var totCost = costRows.reduce(function(a,r){return a+r.rr;},0);
+  if(!revSubs.length && !costSubs.length) {
+    el.innerHTML='<div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">Sync data first.</div>'; return;
+  }
+  var totRev  = revSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totTgt  = revSubs.reduce(function(a,r){return a+r.tg;},0);
+  var totCost = costSubs.reduce(function(a,r){return a+r.rr;},0);
   var margin  = totRev>0 ? ((totRev-totCost)/totRev*100) : 0;
-  var topCost = costRows.slice().sort(function(a,b){return b.rr-a.rr;}).slice(0,3);
-  var ach = revRow && revRow.tg>0 ? (revRow.rr/revRow.tg*100) : 0;
-  var gaps = rows.filter(function(r){ return r.tg>0 && r.rr<r.tg; });
+  var ach     = totTgt>0 ? (totRev/totTgt*100) : 0;
+  var topCost = costSubs.slice().sort(function(a,b){return b.rr-a.rr;}).slice(0,3);
+  var gapRows = costSubs.filter(function(r){return r.tg>0 && r.rr>r.tg;});
 
-  var adviceItems = [
-    {
-      icon:'💰', title:'Revenue Health',
+  var items = [
+    { icon:'\ud83d\udcb0', title:'Revenue Health',
       color: ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)',
-      body: 'Run rate ₹'+fmtN(totRev)+' is '+ach.toFixed(1)+'% of target ₹'+fmtN(revRow?revRow.tg:0)+'.'
-        +(ach<100?' A gap of ₹'+fmtN(revRow?(revRow.tg-revRow.rr):0)+' needs to be closed.':' Excellent — target already exceeded.')
+      body: 'Total run rate \u20b9'+fmtN(totRev)+' is '+ach.toFixed(1)+'% of target \u20b9'+fmtN(totTgt)+'.'
+           +(ach<100?' Gap of \u20b9'+fmtN(totTgt-totRev)+' still needs to be closed.':' Target achieved — excellent!')
     },
-    {
-      icon:'⚙️', title:'Operating Margin',
+    { icon:'\u2699\ufe0f', title:'Operating Margin',
       color: margin>35?'var(--grn)':margin>25?'var(--amb)':'var(--red)',
       body: 'Current margin is '+margin.toFixed(1)+'%. '
-        +(margin>35?'Healthy margins. Focus on revenue growth.':margin>25?'Margins are acceptable but can be improved. Target 35%+.':'Critical — costs are eating into revenue. Immediate cost audit needed.')
+           +(margin>35?'Healthy — focus on revenue growth.':margin>25?'Acceptable but improvable. Target 35%+.':'Critical — costs consuming revenue. Immediate cost audit needed.')
     },
-    {
-      icon:'🔥', title:'Top Cost Pressure',
+    { icon:'\ud83d\udd25', title:'Top Cost Pressure',
       color:'var(--amb)',
-      body: 'Highest cost heads: '+topCost.map(function(r){ return (r.sub||r.cat)+' ₹'+fmtN(r.rr); }).join(', ')+'. Focus cost-control here first for maximum impact.'
+      body: 'Highest 3 cost lines: '+topCost.map(function(r){return (r.sub||r.cat)+' \u20b9'+fmtN(r.rr);}).join(', ')+'. Attack these first for maximum impact.'
     },
-    {
-      icon:'🎯', title:'Target Gap Summary',
-      color: gaps.length===0?'var(--grn)':'var(--red)',
-      body: gaps.length===0 ? 'All categories are on track or above target. Strong performance across the board.'
-        : gaps.length+' categories are below target: '+gaps.map(function(r){return (r.sub||r.cat);}).join(', ')+'. Prioritise these areas.'
+    { icon:'\ud83c\udfaf', title:'Over-Budget Lines',
+      color: gapRows.length===0?'var(--grn)':'var(--red)',
+      body: gapRows.length===0 ? 'All cost heads are within budget. Great cost discipline!'
+           : gapRows.length+' lines over budget: '+gapRows.map(function(r){return (r.sub||r.cat);}).join(', ')+'. Review these immediately.'
     },
-    {
-      icon:'📌', title:'Recommendations',
+    { icon:'\ud83d\udccc', title:'Action Plan',
       color:'var(--blu)',
-      body: '① Review top 3 cost heads weekly. ② Set daily revenue floor at ₹'+fmtN(Math.round(totRev/25))+'. ③ '+(margin<30?'Urgent cost reduction required — target 30% margin.':'Maintain cost discipline while scaling revenue.')+' ④ Benchmark MTD against same period last month.'
+      body: '1. Review top 3 cost heads weekly. '
+           +'2. Daily revenue floor: \u20b9'+fmtN(Math.round(totRev/25))+'/day. '
+           +(margin<30?'3. URGENT: reduce costs to reach 30% margin. ':'3. Maintain cost discipline while scaling. ')
+           +'4. Compare MTD vs same period last month for trend analysis.'
     }
   ];
-
-  el.innerHTML = adviceItems.map(function(item){
-    return '<div class="card card-body" style="margin-bottom:12px;border-left:4px solid '+item.color+'">'
-      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
-        +'<span style="font-size:22px">'+item.icon+'</span>'
-        +'<div style="font-size:14px;font-weight:800;color:var(--txt)">'+item.title+'</div>'
-      +'</div>'
-      +'<div style="font-size:13px;line-height:1.7;color:var(--m2)">'+item.body+'</div>'
-      +'</div>';
+  el.innerHTML = items.map(function(i){
+    return '<div class="card card-body" style="margin-bottom:12px;border-left:4px solid '+i.color+'">'
+      +'<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'
+        +'<span style="font-size:20px">'+i.icon+'</span>'
+        +'<div style="font-size:14px;font-weight:800;color:var(--txt)">'+i.title+'</div>'
+      +'</div><div style="font-size:13px;line-height:1.7;color:var(--m2)">'+i.body+'</div></div>';
   }).join('');
 }
 
 function buildMisBI() {
-  var rows = window._misRows;
+  var costSubs = window._misCostSubs || [];
+  var revSubs  = window._misRevSubs  || [];
   var el = document.getElementById('misBIContent');
   if(!el) return;
-  if(!rows || !rows.length) { el.innerHTML='<div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">No P&L data loaded.</div>'; return; }
+  if(!costSubs.length && !revSubs.length) {
+    el.innerHTML='<div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">Sync data first.</div>'; return;
+  }
+  var totRev  = revSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totTgt  = revSubs.reduce(function(a,r){return a+r.tg;},0);
+  var totCost = costSubs.reduce(function(a,r){return a+r.rr;},0);
+  var margin  = totRev>0 ? ((totRev-totCost)/totRev*100) : 0;
+  var ach     = totTgt>0 ? (totRev/totTgt*100) : 0;
+  var effScore = Math.max(0,Math.min(100,(1-(totCost/Math.max(totRev,1)))*100));
 
-  var revRow   = rows.find(function(r){ return r.cat.toLowerCase().indexOf('revenue')!==-1 && r.isHdr; });
-  var costRows = rows.filter(function(r){ return !r.isHdr && r.rr>0; });
-  var totRev   = revRow ? revRow.rr : 0;
-  var totCost  = costRows.reduce(function(a,r){return a+r.rr;},0);
-  var margin   = totRev>0 ? ((totRev-totCost)/totRev*100) : 0;
-  var ach      = revRow && revRow.tg>0 ? (revRow.rr/revRow.tg*100) : 0;
-
-  var biHTML = '';
-
-  // Scorecard
-  biHTML += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'
-    +[
-      {l:'Cost Efficiency Score', v: Math.max(0,Math.min(100,(1-(totCost/Math.max(totRev,1)))*100)).toFixed(0)+'/100', c:'var(--blu)'},
-      {l:'Revenue Target %',      v: ach.toFixed(1)+'%',   c:ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)'},
-      {l:'Margin Score',          v: margin.toFixed(1)+'%', c:margin>=35?'var(--grn)':margin>=25?'var(--amb)':'var(--red)'}
+  var h = '';
+  // Scorecard KPIs
+  h += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">'
+    +[{l:'Cost Efficiency',v:effScore.toFixed(0)+'/100',c:'var(--blu)'},
+      {l:'Revenue Target %',v:ach.toFixed(1)+'%',c:ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)'},
+      {l:'Margin Score',v:margin.toFixed(1)+'%',c:margin>=35?'var(--grn)':margin>=25?'var(--amb)':'var(--red)'}
     ].map(function(k){
-      return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div><div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div></div>';
+      return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
+            +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div></div>';
     }).join('')+'</div>';
 
-  // Cost Health Table
-  biHTML += '<div class="card card-body" style="margin-bottom:14px">'
-    +'<div class="card-title">Cost Head Health Monitor</div>'
+  // Cost Health Monitor — ONLY cost rows
+  h += '<div class="card card-body" style="margin-bottom:14px"><div class="card-title">Cost Head Health Monitor</div>'
     +'<div class="tbl-scroll"><table><thead><tr>'
-    +'<th>Cost Head</th><th class="num">Run Rate</th><th class="num">Target</th><th class="num">Variance</th><th class="num">Health</th>'
+    +'<th>Cost Head</th><th class="num">Run Rate</th><th class="num">Target</th>'
+    +'<th class="num">Variance</th><th class="num">% of Rev</th><th class="num">Health</th>'
     +'</tr></thead><tbody>';
-  costRows.forEach(function(r){
-    var variance = r.rr - r.tg;
-    var health = r.tg>0 ? (r.rr<=r.tg?'<span style="color:var(--grn);font-weight:700">OK</span>':'<span style="color:var(--red);font-weight:700">Over</span>') : '<span style="color:var(--m1)">-</span>';
-    biHTML += '<tr><td>'+(r.sub||r.cat)+'</td><td class="num">Rs'+fmtN(r.rr)+'</td><td class="num">'+(r.tg?'Rs'+fmtN(r.tg):'-')+'</td>'
-      +'<td class="num" style="color:'+(variance<=0?'var(--grn)':'var(--red)')+'">'+(r.tg?(variance<=0?'- ':'+  ')+'Rs'+fmtN(Math.abs(variance)):'-')+'</td>'
+  costSubs.forEach(function(r){
+    var v = r.rr - r.tg;
+    var pRev = totRev>0?(r.rr/totRev*100):0;
+    var health = r.tg>0 ? (r.rr<=r.tg?'<span style="color:var(--grn);font-weight:700">\u2713 Good</span>'
+                                      :'<span style="color:var(--red);font-weight:700">\u26a0 Over</span>')
+                        : '<span style="color:var(--m1)">-</span>';
+    h += '<tr><td>'+(r.sub||r.cat)+'</td>'
+      +'<td class="num">\u20b9'+fmtN(r.rr)+'</td>'
+      +'<td class="num">'+(r.tg?'\u20b9'+fmtN(r.tg):'-')+'</td>'
+      +'<td class="num" style="color:'+(v<=0?'var(--grn)':'var(--red)')+'">'+( r.tg?(v<=0?'-':'+')+'  \u20b9'+fmtN(Math.abs(v)):'-')+'</td>'
+      +'<td class="num">'+pRev.toFixed(1)+'%</td>'
       +'<td class="num">'+health+'</td></tr>';
   });
-  biHTML += '</tbody></table></div></div>';
+  h += '</tbody></table></div></div>';
 
+  // Cost % of Revenue progress bars
+  h += '<div class="card card-body" style="margin-bottom:14px"><div class="card-title">Cost as % of Revenue</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px;margin-top:8px">';
+  costSubs.filter(function(r){return r.rr>0;}).forEach(function(r){
+    var pct=totRev>0?(r.rr/totRev*100):0;
+    var bc=pct>20?'var(--red)':pct>10?'var(--amb)':'var(--grn)';
+    h += '<div style="display:flex;align-items:center;gap:10px">'
+      +'<div style="min-width:130px;font-size:12px;color:var(--m2)">'+(r.sub||r.cat)+'</div>'
+      +'<div style="flex:1;background:var(--s2);border-radius:99px;height:7px">'
+        +'<div style="width:'+Math.min(pct,100)+'%;height:100%;background:'+bc+';border-radius:99px"></div>'
+      +'</div><div style="min-width:40px;font-size:12px;color:var(--txt);text-align:right;font-weight:700">'+pct.toFixed(1)+'%</div>'
+      +'</div>';
+  });
+  h += '</div></div>';
+
+  // Intelligence Flags
   var flags = [];
-  if(margin < 25) flags.push('Margin below 25% - immediate cost reduction required.');
-  if(ach < 80)    flags.push('Revenue below 80% of target - need to accelerate.');
-  if(ach >= 100)  flags.push('Revenue target achieved! Focus on margin improvement.');
-  costRows.forEach(function(r){ if(r.tg>0&&r.rr>r.tg*1.1) flags.push((r.sub||r.cat)+' is 10%+ over budget.'); });
-  if(!flags.length) flags.push('All indicators healthy. Continue operational discipline.');
+  if(margin<25)   flags.push({c:'#ef4444',m:'Margin below 25% — immediate cost reduction required.'});
+  if(ach<80)      flags.push({c:'#f59e0b',m:'Revenue below 80% of target — accelerate sales.'});
+  if(ach>=100)    flags.push({c:'#22c55e',m:'Revenue target achieved — focus on margin improvement.'});
+  costSubs.forEach(function(r){
+    if(r.tg>0 && r.rr>r.tg*1.1) flags.push({c:'#ef4444',m:(r.sub||r.cat)+' is 10%+ over budget.'});
+  });
+  if(!flags.length) flags.push({c:'#22c55e',m:'All indicators healthy. Maintain current discipline.'});
 
-  biHTML += '<div class="card card-body" style="border-left:4px solid var(--blu)">'
-    +'<div class="card-title" style="color:var(--blu)">Strategic Intelligence Flags</div>'
-    +'<div style="display:flex;flex-direction:column;gap:10px">'
-    +flags.map(function(f){ return '<div style="font-size:13px;padding:6px 0;color:var(--m2);border-bottom:1px solid var(--b1)">'+f+'</div>'; }).join('')
-    +'</div></div>';
+  h += '<div class="card card-body" style="border-left:4px solid var(--blu)">'
+    +'<div class="card-title" style="color:var(--blu)">\ud83c\udfaf Strategic Intelligence Flags</div>'
+    +'<div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">'
+    +flags.map(function(f){
+      return '<div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.6">'
+            +'<span style="color:'+f.c+';font-weight:800;font-size:16px">\u25cf</span>'
+            +'<span style="color:var(--m2)">'+f.m+'</span></div>';
+    }).join('')+'</div></div>';
 
-  el.innerHTML = biHTML;
+  el.innerHTML = h;
 }
 
 
