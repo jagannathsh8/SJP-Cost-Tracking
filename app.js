@@ -196,34 +196,166 @@ function applySheetToGlobals(compositeId){
   window.DYNAMIC_DATA = d.DYNAMIC || {};
   window.TARGETS = d.TARGETS || {};
   window.RUN_RATES = d.RUN_RATES || {};
-  window.MTDS = d.MTDS || {};
   activeSheetId = compositeId;
   saveRegistry();
 }
 
-// ── Switch active sheet (called from dropdown) ──
 function switchActiveSheet(compositeId){
   if(!compositeId||!SHEET_DATA[compositeId]) return;
   applySheetToGlobals(compositeId);
   var d = SHEET_DATA[compositeId];
   var entry = SHEET_REGISTRY.find(function(s){return s.id===d.outletId;});
-  // Update header
   document.getElementById('hdrTitle').innerHTML = (entry?entry.label:'Dashboard')+' - '+d.tabName;
-  document.getElementById('hdrSub').textContent = 'MIS Dashboard · '+DATES.length+' days · Jagan';
+  document.getElementById('hdrSub').textContent = 'MIS Dashboard \u00b7 '+DATES.length+' days \u00b7 Jagan';
   killAllCharts();
   Object.keys(builtPages).forEach(function(k){ delete builtPages[k]; });
   renderUI();
-  
-  // Re-build the currently active page instead of hardcoding 'overview'
   var activeNav = document.querySelector('.nav-btn.active');
   var activePage = activeNav ? activeNav.getAttribute('data-page') : 'overview';
   setTimeout(function(){ 
     buildPageCharts(activePage); 
-    if(activePage === 'mis' && window.renderMIS) renderMIS();
   }, 80);
-  
-  document.getElementById('srcInfoEl').textContent = 'Active: '+(entry?entry.label:'')+' ('+d.tabName+') · '+DATES.length+' days';
 }
+
+// ── CORE UI DISPATCHER ──
+function renderUI() {
+  if(!REV.length) return;
+  var m = calcMetrics();
+  
+  // Header Progress Bar
+  var prog = document.getElementById('revProgFill');
+  if(prog) {
+    var ach = m.totTgt > 0 ? (m.totRev/m.totTgt*100) : 0;
+    prog.style.width = Math.min(ach, 100) + '%';
+    document.getElementById('revAchText').textContent = 'Achieved: ₹' + fmtN(m.totRev);
+    document.getElementById('revTargetText').textContent = 'Target: ₹' + fmtN(m.totTgt);
+  }
+  
+  // Header Day Counter
+  var dr = document.getElementById('hdrDays');
+  if(dr && window.MONTH_DAYS) {
+    var day = REV.filter(v=>v>0).length;
+    dr.textContent = 'Day '+day+' of '+window.MONTH_DAYS+' \u00b7 '+(window.MONTH_DAYS-day)+' days left';
+  }
+
+  // Populate Active Page content
+  if(activeSheetId) {
+    renderOverview();
+    if(window.renderMIS) renderMIS();
+  }
+}
+
+function buildPageCharts(page) {
+  if(!activeSheetId) return;
+  if(page === 'overview') buildOverviewCharts();
+  else if(page === 'revenue') buildRevenueCharts();
+  else if(page === 'costs') buildCostsCharts();
+  else if(page === 'mis') buildMisVisuals();
+  else if(page === 'team') buildTeamCharts();
+  else if(page === 'analysis') buildAnOverview();
+}
+
+// ── OVERVIEW PAGE LOGIC ──
+function renderOverview() {
+  var m = calcMetrics();
+  
+  // 1. Particulars Table
+  var tbl = document.getElementById('overviewMtdTbl');
+  if(tbl) {
+    var rows = [
+      {p:'Net Revenue', t:m.totTgt, r:m.totRev, s:m.totRev},
+      {p:'Total Costs', t:m.totTgt*0.7, r:m.totCost, s:m.totCost},
+      {p:'Net Margin',  t:m.totTgt*0.3, r:m.totNOI, s:m.totNOI}
+    ];
+    tbl.innerHTML = rows.map(function(r){
+      return '<tr><td>'+r.p+'</td>'
+        +'<td class="num">\u20b9'+fmtN(r.t)+'</td>'
+        +'<td class="num">\u20b9'+fmtN(r.r)+'</td>'
+        +'<td class="num">\u20b9'+fmtN(r.s)+'</td>'
+        +'<td class="num">'+(m.totRev>0?(r.r/m.totRev*100).toFixed(1):'0')+'%</td></tr>';
+    }).join('');
+  }
+
+  // 2. Top/Bottom Days
+  var dayObjs = DATES.map(function(d,i){ return {d:d, v:REV[i]}; }).filter(x=>x.v>0);
+  var sorted = dayObjs.slice().sort((a,b)=>b.v-a.v);
+  
+  var top3 = sorted.slice(0,3);
+  var bot3 = sorted.slice(-3).reverse();
+  
+  document.getElementById('top3Days').innerHTML = top3.map(x=>'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--m1)">'+x.d+'</span><span style="color:var(--grn);font-weight:700">\u20b9'+fmtN(x.v)+'</span></div>').join('');
+  document.getElementById('bot3Days').innerHTML = bot3.map(x=>'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--m1)">'+x.d+'</span><span style="color:var(--red);font-weight:700">\u20b9'+fmtN(x.v)+'</span></div>').join('');
+
+  // 3. Weekday vs Weekend
+  var we=[], wd=[];
+  DATES.forEach(function(d,i){
+    if(!REV[i]) return;
+    if(d.indexOf('Sat')!==-1 || d.indexOf('Sun')!==-1) we.push(REV[i]); else wd.push(REV[i]);
+  });
+  document.getElementById('weekendAvgVal').textContent = '\u20b9' + fmtN(avg(we));
+  document.getElementById('weekdayAvgVal').textContent = '\u20b9' + fmtN(avg(wd));
+}
+
+function buildOverviewCharts() {
+  killChart('chOv');
+  var c1 = document.getElementById('chartOverview');
+  if(c1) CI.chOv = new Chart(c1, {
+    type:'bar',
+    data:{
+      labels: DATES.map(d=>d.split(' ')[1]||d),
+      datasets:[{label:'Revenue', data:REV, backgroundColor:'rgba(59,130,246,0.6)', borderRadius:4}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, datalabels:{display:true, color:'#fff', font:{weight:'bold',size:9}, anchor:'end', align:'top', backgroundColor:'rgba(0,0,0,0.4)', borderRadius:3, formatter:v=>v>0?(v/1000).toFixed(0)+'k':''}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:'#cbd5e1', font:{size:10}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'}, grace:'15%', ticks:{color:'#cbd5e1', callback:v=>(v/1000).toFixed(0)+'k'}}
+      }
+    }
+  });
+
+  killChart('chRoll');
+  var roll7 = REV.map((_,i)=>{ if(i<6) return null; var s=REV.slice(i-6,i+1); return sum(s)/7; });
+  var c2 = document.getElementById('chartRolling');
+  if(c2) CI.chRoll = new Chart(c2, {
+    type:'line',
+    data:{
+      labels: DATES.map(d=>d.split(' ')[1]||d),
+      datasets:[{label:'7d Avg', data:roll7, borderColor:'#3b82f6', borderWidth:3, pointRadius:0, tension:0.4, fill:false}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, datalabels:{display:false}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:'#cbd5e1', font:{size:9}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#cbd5e1', callback:v=>(v/1000).toFixed(0)+'k'}}
+      }
+    }
+  });
+
+  killChart('chCum');
+  var cumRev=0, cumDat=REV.map(v=>{cumRev+=v; return cumRev;});
+  var c3 = document.getElementById('chartCumul');
+  if(c3) CI.chCum = new Chart(c3, {
+    type:'line',
+    data:{
+      labels: DATES.map(d=>d.split(' ')[1]||d),
+      datasets:[{label:'Cumulative', data:cumDat, borderColor:'#10b981', backgroundColor:'rgba(16,185,129,0.1)', fill:true, pointRadius:0, borderWidth:2}]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, datalabels:{display:false}},
+      scales:{
+        x:{grid:{display:false}, ticks:{color:'#cbd5e1', font:{size:9}}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'}, ticks:{color:'#cbd5e1', callback:v=>(v/100000).toFixed(1)+'L'}}
+      }
+    }
+  });
+}
+
+function buildRevenueCharts() {} // placeholders
+function buildCostsCharts() {}
 
 // ── Render outlet list on Data Source page ──
 function renderSheetList(){
