@@ -1309,6 +1309,37 @@ function buildMisBI() {
   el.innerHTML = h;
 }
 
+function calcMetrics() {
+  var data = window.MIS_DATA;
+  if(!data || !data.length) return { totRev:0, totTgt:0, totCost:0, totNOI:0, noiPct:0 };
+  var rows = parseMisRows(data);
+  var totRowRev = rows.find(function(r){ 
+    var full = (r.cat + ' ' + r.sub).toLowerCase();
+    return full.indexOf('total') !== -1 && (full.indexOf('revenue') !== -1 || full.indexOf('income') !== -1);
+  });
+  var totRowCost = rows.find(function(r){ 
+    var full = (r.cat + ' ' + r.sub).toLowerCase();
+    return full.indexOf('total') !== -1 && (full.indexOf('expenditure') !== -1 || full.indexOf('cost') !== -1 || full.indexOf('expense') !== -1 || full.indexOf('operating cost') !== -1);
+  });
+  var totRowNOI = rows.find(function(r){ 
+    var full = (r.cat + ' ' + r.sub).toLowerCase();
+    return full.indexOf('net operating income') !== -1 || full.indexOf('operating profit') !== -1;
+  });
+
+  var revSubs  = rows.filter(function(r){ return !r.isHdr && isRevRow(r) && (r.cat+r.sub).toLowerCase().indexOf('total') === -1; });
+  var costSubs = rows.filter(function(r){ return !r.isHdr && !isRevRow(r) && r.rr>0 && (r.cat+r.sub).toLowerCase().indexOf('total') === -1; });
+
+  var totRev   = totRowRev ? totRowRev.rr : revSubs.reduce(function(a,r){return a+r.rr;},0);
+  var totCost  = totRowCost ? totRowCost.rr : costSubs.reduce(function(a,r){return a+r.tg;},0); // Fallback to target if rr not available
+  if(!totCost) totCost = costSubs.reduce(function(a,r){return a+r.rr;},0);
+
+  var totNOI   = totRowNOI ? totRowNOI.rr : (totRev - totCost);
+  var noiPct   = totRev > 0 ? (totNOI / totRev * 100) : 0;
+  var totTgt   = totRowRev ? totRowRev.tg : revSubs.reduce(function(a,r){return a+r.tg;},0);
+
+  return { totRev: totRev, totTgt: totTgt, totCost: totCost, totNOI: totNOI, noiPct: noiPct };
+}
+
 function buildAnOverview() {
   if(!window.REV || !window.REV.length) return;
   
