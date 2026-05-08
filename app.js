@@ -6,54 +6,50 @@ var SHEET_REGISTRY = [];
 var activeSheetId = '';
 var DEFAULT_API_URL = 'YOUR_APPS_SCRIPT_URL';
 
-function loadRegistry(){
-  try { SHEET_REGISTRY = JSON.parse(localStorage.getItem('sjp_outlets')||'[]'); } catch(e){ SHEET_REGISTRY=[]; }
-  activeSheetId = localStorage.getItem('sjp_active_outlet')||'';
-  
-  // Auto-select latest sheet if none active
-  if(!activeSheetId && SHEET_REGISTRY.length) {
-    // We'll pick the last one added as the "latest"
-    var last = SHEET_REGISTRY[SHEET_REGISTRY.length-1];
-    var tabs = Object.keys(SHEET_DATA).filter(function(k){ return SHEET_DATA[k].outletId === last.id; });
-    if(tabs.length) activeSheetId = tabs[tabs.length-1];
-  }
-}
-function saveRegistry(){
-  localStorage.setItem('sjp_outlets', JSON.stringify(SHEET_REGISTRY));
-  localStorage.setItem('sjp_active_outlet', activeSheetId);
-}
+// ── Registry Management ──
+loadRegistry();
 
-function switchActiveSheet(id){
-  if(!SHEET_DATA[id]) return;
-  activeSheetId = id;
-  saveRegistry();
-  
-  var d = SHEET_DATA[id];
-  // Inject into global arrays
-  DATES.length=0; d.DATES.forEach(function(x){ DATES.push(x); });
-  REV.length=0; d.REV.forEach(function(x){ REV.push(x); });
-  RM.length=0; d.RM.forEach(function(x){ RM.push(x); });
-  CP.length=0; d.CP.forEach(function(x){ CP.push(x); });
-  PKG.length=0; d.PKG.forEach(function(x){ PKG.push(x); });
-  HK.length=0; d.HK.forEach(function(x){ HK.push(x); });
-  GASU.length=0; d.GASU.forEach(function(x){ GASU.push(x); });
-  GASV.length=0; d.GASV.forEach(function(x){ GASV.push(x); });
-  WATQ.length=0; d.WATQ.forEach(function(x){ WATQ.push(x); });
-  WATV.length=0; d.WATV.forEach(function(x){ WATV.push(x); });
-  PETTY.length=0; d.PETTY.forEach(function(x){ PETTY.push(x); });
-  
-  // Inject targets
-  window.DYNAMIC_DATA = d.DYNAMIC;
-  window.TARGETS = d.TARGETS;
-  window.RUN_RATES = d.RUN_RATES;
-  window.MTDS = d.MTDS;
-  window.TARGET = d.TARGET;
-  window.MONTH_DAYS = d.MONTH_DAYS;
-  
+// ── Switch active sheet (called from dropdown) ──
+function switchActiveSheet(compositeId){
+  if(!compositeId||!SHEET_DATA[compositeId]) return;
+  applySheetToGlobals(compositeId);
+  var d = SHEET_DATA[compositeId];
+  var entry = SHEET_REGISTRY.find(function(s){return s.id===d.outletId;});
+  document.getElementById('hdrTitle').innerHTML = (entry?entry.label:'Dashboard')+' - '+d.tabName;
+  document.getElementById('hdrSub').textContent = 'MIS Dashboard \u00b7 '+DATES.length+' days \u00b7 Jagan';
   killAllCharts();
   Object.keys(builtPages).forEach(function(k){ delete builtPages[k]; });
   renderUI();
-  setTimeout(function(){ buildPageCharts('overview'); }, 80);
+  var activeNav = document.querySelector('.nav-btn.active');
+  var activePage = activeNav ? activeNav.getAttribute('data-page') : 'overview';
+  setTimeout(function(){ 
+    buildPageCharts(activePage); 
+  }, 80);
+}
+
+// ── Apply a sheet's data to global arrays ──
+function applySheetToGlobals(compositeId){
+  var d = SHEET_DATA[compositeId];
+  if(!d) return;
+  function inject(arr,vals){ 
+    if(!arr) return;
+    arr.length=0; 
+    if(!vals) return;
+    for(var i=0;i<vals.length;i++) arr.push(vals[i]); 
+  }
+  inject(DATES,d.DATES); inject(REV,d.REV); inject(RM,d.RM); inject(CP,d.CP);
+  inject(PKG,d.PKG); inject(HK,d.HK); inject(GASU,d.GASU); inject(GASV,d.GASV);
+  inject(WATQ,d.WATQ); inject(WATV,d.WATV); inject(PETTY,d.PETTY);
+  
+  window.TARGET = d.TARGET; 
+  window.MONTH_DAYS = d.MONTH_DAYS;
+  window.DYNAMIC_DATA = d.DYNAMIC || {};
+  window.TARGETS = d.TARGETS || {};
+  window.RUN_RATES = d.RUN_RATES || {};
+  window.MTDS = d.MTDS || {};
+  
+  activeSheetId = compositeId;
+  saveRegistry();
 }
 
 // ── Parse multi-tab Apps Script JSON into data objects ──
@@ -184,38 +180,7 @@ async function fetchOutletData(outletId, url){
   return savedKeys;
 }
 
-// ── Apply a sheet's data to global arrays ──
-function applySheetToGlobals(compositeId){
-  var d = SHEET_DATA[compositeId];
-  if(!d) return;
-  function inject(arr,vals){ arr.length=0; for(var i=0;i<vals.length;i++) arr.push(vals[i]); }
-  inject(DATES,d.DATES); inject(REV,d.REV); inject(RM,d.RM); inject(CP,d.CP);
-  inject(PKG,d.PKG); inject(HK,d.HK); inject(GASU,d.GASU); inject(GASV,d.GASV);
-  inject(WATQ,d.WATQ); inject(WATV,d.WATV); inject(PETTY,d.PETTY);
-  TARGET = d.TARGET; MONTH_DAYS = d.MONTH_DAYS;
-  window.DYNAMIC_DATA = d.DYNAMIC || {};
-  window.TARGETS = d.TARGETS || {};
-  window.RUN_RATES = d.RUN_RATES || {};
-  activeSheetId = compositeId;
-  saveRegistry();
-}
 
-function switchActiveSheet(compositeId){
-  if(!compositeId||!SHEET_DATA[compositeId]) return;
-  applySheetToGlobals(compositeId);
-  var d = SHEET_DATA[compositeId];
-  var entry = SHEET_REGISTRY.find(function(s){return s.id===d.outletId;});
-  document.getElementById('hdrTitle').innerHTML = (entry?entry.label:'Dashboard')+' - '+d.tabName;
-  document.getElementById('hdrSub').textContent = 'MIS Dashboard \u00b7 '+DATES.length+' days \u00b7 Jagan';
-  killAllCharts();
-  Object.keys(builtPages).forEach(function(k){ delete builtPages[k]; });
-  renderUI();
-  var activeNav = document.querySelector('.nav-btn.active');
-  var activePage = activeNav ? activeNav.getAttribute('data-page') : 'overview';
-  setTimeout(function(){ 
-    buildPageCharts(activePage); 
-  }, 80);
-}
 
 // ── CORE UI DISPATCHER ──
 function renderUI() {
