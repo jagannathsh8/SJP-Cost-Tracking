@@ -1006,10 +1006,7 @@ function renderMIS() {
 
   var kpiEl = document.getElementById('misKpiStrip');
   if(kpiEl) {
-    kpiEl.style.display = 'grid';
-    kpiEl.style.gridTemplateColumns = 'repeat(5, 1fr)';
-    kpiEl.style.gap = '10px';
-    
+    kpiEl.className = 'mis-kpi-grid';
     kpiEl.innerHTML = [
       {l:'RUN RATE REVENUE',    v:'\u20b9'+fmtN(totRev),      c:'var(--grn)',  s:totRowRev ? 'From: '+(totRowRev.sub||totRowRev.cat) : 'Calculated Sum'},
       {l:'TOTAL EXPENDITURE',   v:'\u20b9'+fmtN(totCost),     c:'var(--red)',  s:totRowCost ? 'From: '+(totRowCost.sub||totRowCost.cat) : 'Calculated Sum'},
