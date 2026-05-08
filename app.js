@@ -811,7 +811,10 @@ function buildTeamCharts() {
       labels:Object.keys(locMap), 
       datasets:[{data:Object.values(locMap), backgroundColor:SHEET_COLORS, borderWidth:0}]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'#94a3b8',font:{size:10}}}}}
+    options:{responsive:true,maintainAspectRatio:false,plugins:{
+      legend:{position:'right',labels:{color:'#cbd5e1',font:{size:10}}},
+      datalabels:{color:'#fff',font:{weight:'bold',size:11},formatter:v=>v>0?v:''}
+    }}
   });
 
   killChart('chTeamDesig');
@@ -844,7 +847,16 @@ function buildTeamCharts() {
       labels:mKeys, 
       datasets:[{label:'Hired', data:mKeys.map(k=>monthMap[k]), backgroundColor:'#38bdf8', borderRadius:4}]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#64748b'}},y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#64748b'}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{
+        legend:{display:false},
+        datalabels:{color:'#fff',anchor:'end',align:'top',offset:2,font:{weight:'bold',size:12},backgroundColor:'rgba(0,0,0,0.5)',borderRadius:4}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#cbd5e1'}},
+        y:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#cbd5e1'},grace:'15%'}
+      }
+    }
   });
 
   killChart('chTeamRef');
@@ -1276,7 +1288,6 @@ function buildMisBI() {
   });
   h += '</div></div>';
 
-  // Intelligence Flags
   var flags = [];
   if(margin<25)   flags.push({c:'#ef4444',m:'Margin below 25% — immediate cost reduction required.'});
   if(ach<80)      flags.push({c:'#f59e0b',m:'Revenue below 80% of target — accelerate sales.'});
@@ -1287,51 +1298,45 @@ function buildMisBI() {
   if(!flags.length) flags.push({c:'#22c55e',m:'All indicators healthy. Maintain current discipline.'});
 
   h += '<div class="card card-body" style="border-left:4px solid var(--blu)">'
-    +'<div class="card-title" style="color:var(--blu)">\ud83c\udfaf Strategic Intelligence Flags</div>'
+    +'<div class="card-title" style="color:var(--blu)">📋 Strategic Intelligence Flags</div>'
     +'<div style="display:flex;flex-direction:column;gap:10px;margin-top:6px">'
     +flags.map(function(f){
       return '<div style="display:flex;align-items:flex-start;gap:10px;font-size:13px;line-height:1.6">'
-            +'<span style="color:'+f.c+';font-weight:800;font-size:16px">\u25cf</span>'
+            +'<span style="color:'+f.c+';font-weight:800;font-size:16px">●</span>'
             +'<span style="color:var(--m2)">'+f.m+'</span></div>';
     }).join('')+'</div></div>';
 
   el.innerHTML = h;
 }
 
-
-function getActiveSheet() {
-  return SHEET_DATA[activeSheetId];
-}
-
 function buildAnOverview() {
   if(!window.REV || !window.REV.length) return;
   
+  var m = calcMetrics();
   var rev = window.REV;
-  var rm  = window.RM || [];
-  var cp  = window.CP || [];
-  var pkg = window.PKG || [];
-  var gas = window.GASV || [];
   
-  var totRev = sum(rev);
-  var totVar = sum(rm) + sum(cp) + sum(pkg) + sum(gas);
+  // 1. Net Operating Margin (from Sheet Run Rate)
+  document.getElementById('anKpiMargin').innerText = m.noiPct.toFixed(1) + '%';
+  document.getElementById('anKpiMarginSub').innerText = 'NOI: ₹' + fmtN(m.totNOI);
   
-  // 1. Operating Margin (Gross)
-  var margin = totRev > 0 ? ((totRev - totVar) / totRev) * 100 : 0;
-  document.getElementById('anKpiMargin').innerText = margin.toFixed(1) + '%';
-  document.getElementById('anKpiMarginSub').innerText = 'Efficiency: ' + (margin > 30 ? 'High' : 'Optimal') + ' range';
+  // 2. Run Rate Revenue (from Sheet)
+  document.getElementById('anKpiRunRate').innerText = '₹' + fmtN(m.totRev);
+  document.getElementById('anKpiRunRateSub').innerText = 'Ach: ' + (m.totTgt > 0 ? (m.totRev/m.totTgt*100).toFixed(1) : 0) + '% of Target';
   
-  // 2. Run Rate (Linear Projection)
-  var daysElapsed = rev.filter(function(v){return v > 0}).length || 1;
-  var monthDays = window.MONTH_DAYS || 30;
-  var dAvg = totRev / daysElapsed;
-  var runRate = dAvg * monthDays;
-  document.getElementById('anKpiRunRate').innerText = '₹' + fmtN(runRate);
-  document.getElementById('anKpiRunRateSub').innerText = 'Pace: ₹' + fmtN(dAvg) + ' / day';
-  
-  // 3. Peak Day
-  var peak = Math.max.apply(null, rev);
-  document.getElementById('anKpiPeak').innerText = '₹' + fmtN(peak);
-  document.getElementById('anKpiPeakSub').innerText = 'Max potential recorded';
+  // 3. Last Month Comparison (Till Day)
+  var lmVal = 0;
+  var keys = Object.keys(SHEET_DATA).sort();
+  var curIdx = keys.indexOf(activeSheetId);
+  if(curIdx > 0) {
+    var prev = SHEET_DATA[keys[curIdx-1]];
+    var dayCount = rev.filter(function(v){return v > 0}).length;
+    var prevSlice = prev.REV.slice(0, dayCount);
+    var prevSum = sum(prevSlice);
+    lmVal = (prevSum / (dayCount || 1)) * (window.MONTH_DAYS || 30);
+  }
+  document.getElementById('anKpiPeak').innerText = lmVal > 0 ? '₹' + fmtN(lmVal) : 'N/A';
+  var diff = lmVal > 0 ? ((m.totRev - lmVal) / lmVal * 100) : 0;
+  document.getElementById('anKpiPeakSub').innerText = lmVal > 0 ? (diff>=0?'+':'') + diff.toFixed(1) + '% vs Last Month' : 'No previous data';
 
   // 4. Momentum Chart (7-Day Moving Average)
   var roll7 = rev.map(function(_, i) {
@@ -1353,10 +1358,14 @@ function buildAnOverview() {
     },
     options: { 
       responsive:true, maintainAspectRatio:false, 
-      plugins:{legend:{display:false}, tooltip:{mode:'index', intersect:false}}, 
+      plugins:{
+        legend:{display:false}, 
+        tooltip:{mode:'index', intersect:false},
+        datalabels:{display:false}
+      }, 
       scales:{
-        y:{grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#64748b', callback: function(v){return (v/1000).toFixed(0)+'k'}}},
-        x:{grid:{display:false}, ticks:{color:'#64748b', maxTicksLimit: 10}}
+        y:{grid:{color:'rgba(255,255,255,0.03)'}, grace:'15%', ticks:{color:'#cbd5e1', callback: function(v){return (v/1000).toFixed(0)+'k'}}},
+        x:{grid:{display:false}, ticks:{color:'#cbd5e1', maxTicksLimit: 10}}
       }
     }
   });
@@ -1364,6 +1373,7 @@ function buildAnOverview() {
   // 5. Daily Margin Trend Chart
   var dailyMargins = rev.map(function(r, i) {
     if(!r) return 0;
+    var rm = window.RM || []; var cp = window.CP || []; var pkg = window.PKG || []; var gas = window.GASV || [];
     var v = (rm[i]||0) + (cp[i]||0) + (pkg[i]||0) + (gas[i]||0);
     return ((r - v) / r) * 100;
   });
@@ -1383,10 +1393,13 @@ function buildAnOverview() {
     },
     options: { 
       responsive:true, maintainAspectRatio:false, 
-      plugins:{legend:{display:false}}, 
+      plugins:{
+        legend:{display:false},
+        datalabels:{display:false}
+      }, 
       scales:{
-        y:{grid:{color:'rgba(255,255,255,0.03)'}, ticks:{color:'#64748b', callback:function(v){return v+'%'}}},
-        x:{grid:{display:false}, ticks:{color:'#64748b', maxTicksLimit: 10}}
+        y:{grid:{color:'rgba(255,255,255,0.03)'}, grace:'15%', ticks:{color:'#cbd5e1', callback:function(v){return v+'%'}}},
+        x:{grid:{display:false}, ticks:{color:'#cbd5e1', maxTicksLimit: 10}}
       }
     }
   });

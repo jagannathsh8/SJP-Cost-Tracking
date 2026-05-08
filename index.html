@@ -325,7 +325,7 @@ tbody tr:last-child td{border-bottom:none}
     <div>
       <div style="display:flex;align-items:baseline">
         <div class="hdr-title" id="hdrTitle">SJP Dashboard</div>
-        <span style="font-size:9px;color:var(--m1);opacity:0.6;margin-left:6px;font-family:'DM Mono',monospace">v1.1.6</span>
+        <span style="font-size:9px;color:var(--m1);opacity:0.6;margin-left:6px;font-family:'DM Mono',monospace">v1.1.8</span>
       </div>
       <div class="hdr-sub" id="hdrSub">MIS Dashboard · Select a sheet</div>
     </div>
@@ -868,19 +868,19 @@ tbody tr:last-child td{border-bottom:none}
   <div id="an-overview">
     <div class="grid3" style="margin-bottom:20px">
       <div class="kpi-card">
-        <div class="kpi-lbl">OP. MARGIN (MTD)</div>
+        <div class="kpi-lbl">NET OPERATING MARGIN</div>
         <div class="kpi-val" id="anKpiMargin" style="color:var(--grn)">--</div>
-        <div class="kpi-sub" id="anKpiMarginSub">Revenue minus variable costs</div>
+        <div class="kpi-sub" id="anKpiMarginSub">Based on sheet run rate</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">REVENUE RUN RATE</div>
+        <div class="kpi-lbl">RUN RATE REVENUE</div>
         <div class="kpi-val" id="anKpiRunRate" style="color:var(--amb)">--</div>
-        <div class="kpi-sub" id="anKpiRunRateSub">Projected month-end closing</div>
+        <div class="kpi-sub" id="anKpiRunRateSub">Official sheet projection</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">PEAK PERFORMANCE</div>
+        <div class="kpi-lbl">LM TILL DAY RUN RATE</div>
         <div class="kpi-val" id="anKpiPeak" style="color:var(--pur)">--</div>
-        <div class="kpi-sub" id="anKpiPeakSub">Highest single-day achievement</div>
+        <div class="kpi-sub" id="anKpiPeakSub">Comparison vs last month</div>
       </div>
     </div>
 
@@ -1445,7 +1445,7 @@ if(typeof ChartDataLabels !== 'undefined'){
     anchor: 'end',
     align: 'top',
     offset: 2,
-    display: 'auto',
+    display: true,
     clip: false
   };
 }
@@ -2318,6 +2318,6 @@ function switchAnTab(tab){
 
 
 </script>
-<script src="app.js?v=1.1.6"></script>
+<script src="app.js?v=1.1.8"></script>
 </body>
 </html>
