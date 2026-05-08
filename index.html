@@ -245,6 +245,14 @@ tbody tr:last-child td{border-bottom:none}
   }
   .kpi-val { font-size: 24px !important; }
   table { font-size: 13px !important; }
+  .stab-bar {
+    overflow-x: auto !important;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    padding: 6px !important;
+  }
+  .stab-bar::-webkit-scrollbar { display: none; }
+  .stab-btn { flex: 0 0 110px !important; }
 }
 
 /* ─ SHEET SELECTOR ─ */
@@ -315,7 +323,10 @@ tbody tr:last-child td{border-bottom:none}
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
     </div>
     <div>
-      <div class="hdr-title" id="hdrTitle">SJP Dashboard</div>
+      <div style="display:flex;align-items:baseline">
+        <div class="hdr-title" id="hdrTitle">SJP Dashboard</div>
+        <span style="font-size:9px;color:var(--m1);opacity:0.6;margin-left:6px;font-family:'DM Mono',monospace">v1.1.6</span>
+      </div>
       <div class="hdr-sub" id="hdrSub">MIS Dashboard · Select a sheet</div>
     </div>
   </div>
@@ -2307,6 +2318,6 @@ function switchAnTab(tab){
 
 
 </script>
-<script src="app.js?v=1.1.5"></script>
+<script src="app.js?v=1.1.6"></script>
 </body>
 </html>

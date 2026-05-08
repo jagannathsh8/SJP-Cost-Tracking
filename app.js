@@ -1470,8 +1470,8 @@ function buildAnBenchmark() {
         }
       },
       scales:{
-        y:{display:false}, 
-        x:{ticks:{color:'#f8fafc', font:{size:13, weight:'700'}}, grid:{display:false}}
+        y:{display:false, grace:'25%'}, 
+        x:{ticks:{color:'#cbd5e1', font:{size:13, weight:'700'}}, grid:{display:false}}
       }
     }
   });
