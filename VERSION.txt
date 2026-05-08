@@ -1,4 +1,4 @@
-Version: 1.1.8
+Version: 1.1.6
 Release Date: 2026-05-08
 Status: Stable
 
@@ -9,7 +9,7 @@ Files:
 - update.js (Update Handler)
 - manifest.json (PWA Manifest)
 
-Changes in v1.1.8:
-- Dashboard refinements
-- Performance optimizations
+Changes in v1.1.6:
+- Bug fixes and stability improvements
 - Enhanced data visualization
+- Performance optimizations
