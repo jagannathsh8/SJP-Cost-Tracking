@@ -1088,7 +1088,7 @@ function buildMisVisuals() {
         backgroundColor:['rgba(34,197,94,0.75)','rgba(239,68,68,0.75)','rgba(59,130,246,0.75)'],borderRadius:10,barThickness:60}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '\u20b9'+fmtN(c.raw);}}}},
-      scales:{y:{ticks:{color:'#64748b',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.04)'}},
+      scales:{y:{ticks:{color:'#cbd5e1',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.06)'},grace:'15%'},
               x:{ticks:{color:'#f8fafc',font:{size:13,weight:'700'}},grid:{display:false}}}}
   });
 
@@ -1119,9 +1119,9 @@ function buildMisVisuals() {
         {label:'Target',  data:top10.map(function(r){return r.tg;}),backgroundColor:'rgba(245,158,11,0.4)',borderRadius:5}
       ]},
     options:{responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#94a3b8',font:{size:11}}}},
-      scales:{y:{ticks:{color:'#64748b',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.04)'}},
-              x:{ticks:{color:'#94a3b8',font:{size:9},maxRotation:40},grid:{display:false}}}}
+      plugins:{legend:{labels:{color:'#cbd5e1',font:{size:11}}}},
+      scales:{y:{ticks:{color:'#cbd5e1',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.06)'},grace:'15%'},
+              x:{ticks:{color:'#cbd5e1',font:{size:9},maxRotation:40},grid:{display:false}}}}
   });
 
   // Chart 4: Waterfall (Rev → Cost categories → Net)
@@ -1139,8 +1139,8 @@ function buildMisVisuals() {
         borderRadius:7}]},
     options:{responsive:true,maintainAspectRatio:false,
       plugins:{legend:{display:false},tooltip:{callbacks:{label:function(c){return '\u20b9'+fmtN(Math.abs(c.raw));}}}},
-      scales:{y:{ticks:{color:'#64748b',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.04)'}},
-              x:{ticks:{color:'#94a3b8',font:{size:10}},grid:{display:false}}}}
+      scales:{y:{ticks:{color:'#cbd5e1',callback:function(v){return '\u20b9'+fmtN(v);}},grid:{color:'rgba(255,255,255,0.06)'},grace:'15%'},
+              x:{ticks:{color:'#cbd5e1',font:{size:10}},grid:{display:false}}}}
   });
 
   // Chart 5: MTD tracker (cost sub-rows only)
