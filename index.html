@@ -8,7 +8,7 @@
 <meta name="theme-color" content="#0d1117">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/1458/1458260.png">
-<title>SJP Â· Babai Tiffin MIS</title>
+<title>SJP · Babai Tiffin MIS</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0"></script>
 <style>
@@ -17,7 +17,7 @@
 html,body{min-height:100%;background:#07090f;color:#f1f5f9;font-family:'DM Sans',sans-serif;font-size:14px;overscroll-behavior-y:none}
 ::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-thumb{background:#2d3748;border-radius:4px}
 
-/* â”€ VARIABLES â”€ */
+/* ─ VARIABLES ─ */
 :root{
   --bg:#03050a; --s1:#0a0d14; --s2:#111621; --b1:#1e2533; --b2:#2a3447;
   --amb:#f59e0b; --grn:#10b981; --red:#f43f5e; --blu:#3b82f6;
@@ -26,7 +26,7 @@ html,body{min-height:100%;background:#07090f;color:#f1f5f9;font-family:'DM Sans'
   --shadow:0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
 
-/* â”€ HEADER â”€ */
+/* ─ HEADER ─ */
 .hdr{position:sticky;top:0;z-index:100;background:var(--s1);border-bottom:1px solid var(--b1);padding:6px 16px;display:flex;align-items:center;justify-content:space-between;min-height:44px}
 .hdr-logo{background:linear-gradient(135deg,var(--amb),#ef4444);border-radius:8px;padding:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .hdr-title{font-weight:800;font-size:14px;letter-spacing:-.3px;line-height:1}
@@ -34,20 +34,20 @@ html,body{min-height:100%;background:#07090f;color:#f1f5f9;font-family:'DM Sans'
 @media(max-width:600px){ .hdr-sub { display: none; } }
 .live-badge{display:inline-block;background:var(--s2);color:var(--amb);border:1px solid var(--b2);padding:1px 6px;border-radius:20px;font-size:8px;font-weight:700;letter-spacing:.5px;margin-left:4px;vertical-align:middle}
 
-/* â”€ NAV â”€ */
+/* ─ NAV ─ */
 .nav{position:sticky;top:44px;z-index:99;background:var(--s1);border-bottom:1px solid var(--b1);display:flex;overflow-x:auto;scrollbar-width:none}
 .nav::-webkit-scrollbar{display:none}
 .nav-btn{flex-shrink:0;padding:10px 14px;background:none;border:none;border-bottom:2px solid transparent;color:var(--m1);font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;cursor:pointer;white-space:nowrap;transition:color .15s,border-color .15s}
 .nav-btn.active{color:var(--amb);border-bottom-color:var(--amb)}
 
-/* â”€ MAIN â”€ */
+/* ─ MAIN ─ */
 .main{padding:16px;max-width:960px;margin:0 auto;padding-bottom:80px}
 @media(max-width:600px){
   .main { padding: 10px 0; padding-bottom: 110px; max-width: 100vw; }
 }
 .page{display:none; min-height: 80vh; }.page.active{display:block}
 
-/* â”€ CARDS â”€ */
+/* ─ CARDS ─ */
 .card{background:var(--s1);border:1px solid var(--b1);border-radius:18px;overflow:hidden;box-shadow:var(--shadow);transition:transform 0.2s ease, border-color 0.2s ease;}
 .card:hover{border-color:var(--b2);}
 @media(max-width:600px){
@@ -63,21 +63,20 @@ html,body{min-height:100%;background:#07090f;color:#f1f5f9;font-family:'DM Sans'
 .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .stack{display:flex;flex-direction:column;gap:12px}
 
-/* â”€ KPI GRID â”€ */
+/* ─ KPI GRID ─ */
 .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px}
-.mis-kpi-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:14px}
 .kpi-card{background:linear-gradient(145deg, var(--s1), var(--s2));border:1px solid var(--b1);border-radius:18px;padding:20px;box-shadow:var(--shadow);position:relative;overflow:hidden;}
 .kpi-card::after{content:'';position:absolute;top:0;right:0;width:60px;height:60px;background:radial-gradient(circle at top right, rgba(255,255,255,0.03), transparent 70%);}
 .kpi-lbl{font-size:10px;color:var(--m1);font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px}
-.kpi-val{font-size:24px;font-weight:800;font-family:'DM Sans',sans-serif;line-height:1;letter-spacing:-0.5px}
+.kpi-val{font-size:24px;font-weight:800;font-family:'DM Mono',monospace;line-height:1;letter-spacing:-1px}
 .kpi-sub{font-size:11px;color:var(--m1);margin-top:8px;line-height:1.4;font-weight:500}
 
-/* â”€ PROGRESS â”€ */
+/* ─ PROGRESS ─ */
 .prog-track{background:var(--s2);border-radius:6px;height:9px;overflow:hidden;margin-bottom:7px}
 .prog-fill{height:100%;border-radius:6px;transition:width .8s ease}
 .prog-labels{display:flex;justify-content:space-between;font-size:10px;color:var(--m1)}
 
-/* â”€ TABLES â”€ */
+/* ─ TABLES ─ */
 .tbl-scroll{
   overflow: auto;
   -webkit-overflow-scrolling: touch;
@@ -102,13 +101,24 @@ td{padding:12px 12px;border-bottom:1px solid var(--b1);color:var(--m2);white-spa
 tbody tr:last-child td{border-bottom:none}
 .tfoot td{background:var(--s2)!important;border-top:2px solid var(--b2);font-weight:700;color:var(--txt);font-family:'DM Mono',monospace;font-size:11px}
 
-/* â”€ STICKY â”€ */
-/* â”€ STICKY LOGIC â”€ moved to specialized blocks */
+/* ─ STICKY ─ */
+#dailyLogHead th, #dailyLogTbl td, #dailyLogFoot td { position: static !important; } /* Reset all first */
+#dailyLogHead th { position: sticky !important; top: 0; z-index: 100; background: var(--s2); }
+#dailyLogHead th:first-child,
+#dailyLogTbl td:first-child,
+#dailyLogFoot td:first-child {
+  position: sticky !important;
+  left: 0;
+  z-index: 120;
+  background: #0d1117 !important;
+  border-right: 1px solid var(--b2);
+}
+#dailyLogHead th:first-child { z-index: 130; background: #111827 !important; }
 
 .tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
 .tag-g{background:#14532d;color:#86efac}.tag-r{background:#450a0a;color:#fca5a5}.tag-a{background:#451a03;color:#fcd34d}.tag-m{background:var(--s2);color:var(--m1)}
 
-/* â”€ BUTTONS â”€ */
+/* ─ BUTTONS ─ */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;border:none;border-radius:9px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;transition:all .15s;line-height:1}
 .btn-primary{background:var(--amb);color:#000;padding:12px 20px;width:100%}
 .btn-primary:active{background:#fbbf24}.btn-primary:disabled{opacity:.5;cursor:not-allowed}
@@ -116,49 +126,49 @@ tbody tr:last-child td{border-bottom:none}
 .btn-ghost:active{background:var(--s2)}
 .btn-wa{background:#14532d;color:#86efac;padding:7px 12px;font-size:11px;text-decoration:none;border-radius:9px;display:inline-flex;align-items:center;gap:5px;font-weight:700}
 
-/* â”€ INPUTS â”€ */
+/* ─ INPUTS ─ */
 .inp{background:var(--s2);border:1px solid var(--b2);color:var(--txt);padding:10px 13px;border-radius:9px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;width:100%;transition:border-color .15s}
 .inp:focus{border-color:rgba(245,158,11,.6)}
 
-/* â”€ COST RATIO â”€ */
+/* ─ COST RATIO ─ */
 .ratio-row{margin-bottom:13px}
 .ratio-meta{display:flex;justify-content:space-between;font-size:11px;margin-bottom:5px}
 .ratio-track{background:var(--s2);border-radius:4px;height:5px}
 .ratio-fill{height:100%;border-radius:4px}
 
-/* â”€ DAY ROWS â”€ */
+/* ─ DAY ROWS ─ */
 .day-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--b1)}
 .day-row:last-child{border-bottom:none}
 
-/* â”€ INTEL SUBTABS â”€ */
+/* ─ INTEL SUBTABS ─ */
 .stab-bar{display:flex;gap:5px;background:var(--s2);padding:5px;border-radius:10px;margin-bottom:16px;border:1px solid var(--b1)}
 .stab-btn{flex:1;padding:9px 6px;background:transparent;border:1px solid transparent;border-radius:7px;color:var(--m1);font-size:11px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;text-align:center;transition:all .15s}
 .stab-btn.active{background:var(--s1);border-color:rgba(245,158,11,.35);color:var(--txt)}
 
-/* â”€ MSG OPTIONS â”€ */
+/* ─ MSG OPTIONS ─ */
 .msg-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
 .msg-opt{background:transparent;border:1px solid var(--b2);border-radius:10px;padding:10px;text-align:left;cursor:pointer;color:var(--m1);font-family:'DM Sans',sans-serif;transition:all .15s}
 .msg-opt.active{background:var(--s2);border-color:rgba(245,158,11,.5);color:var(--txt)}
 .msg-opt-t{font-size:12px;font-weight:700}
 .msg-opt-s{font-size:10px;color:var(--m1);margin-top:2px}
 
-/* â”€ OUTPUT â”€ */
+/* ─ OUTPUT ─ */
 .out-wrap{margin-top:14px}
 .out-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 .out-label{font-size:11px;font-weight:700;color:#34d399}
 .out-actions{display:flex;gap:7px;align-items:center}
 .out-box{background:#030b07;border:1px solid #1a3020;border-radius:10px;padding:14px;font-size:12px;line-height:1.85;color:#d1fae5;white-space:pre-wrap;font-family:'DM Mono',monospace;min-height:60px}
 
-/* â”€ MODAL â”€ */
+/* ─ MODAL ─ */
 .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;align-items:center;justify-content:center;padding:20px}
 .modal-overlay.show{display:flex}
 .modal-box{background:#0d1117;border:1px solid #1e2640;border-radius:16px;padding:24px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
 
-/* â”€ DROPZONE â”€ */
+/* ─ DROPZONE ─ */
 .dropzone{border:2px dashed var(--b2);border-radius:11px;padding:28px 16px;text-align:center;cursor:pointer;transition:all .2s}
 .dropzone.over{border-color:var(--amb);background:rgba(245,158,11,.05)}
 
-/* â”€ CHART EXPAND â”€ */
+/* ─ CHART EXPAND ─ */
 .chart-wrap{position:relative}
 .exp-btn{position:absolute;top:-35px;right:0;width:28px;height:28px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;display:flex;align-items:center;justify-content:center;color:var(--m2);cursor:pointer;z-index:10;transition:all .15s}
 .exp-btn:active{background:var(--amb);color:#000;border-color:var(--amb)}
@@ -167,11 +177,11 @@ tbody tr:last-child td{border-bottom:none}
 .fs-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}
 .fs-close{background:var(--s2);border:1px solid var(--b2);color:var(--txt);padding:10px 20px;border-radius:10px;font-weight:700}
 
-/* â”€ SPINNER â”€ */
+/* ─ SPINNER ─ */
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner{width:15px;height:15px;border:2px solid rgba(0,0,0,.2);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
 
-/* â”€ TOAST â”€ */
+/* ─ TOAST ─ */
 .toast{position:fixed;top:18px;right:18px;background:#16a34a;color:#fff;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:700;z-index:1000;opacity:0;transition:opacity .25s;pointer-events:none;max-width:280px}
 .toast.show{opacity:1}
 
@@ -224,43 +234,19 @@ tbody tr:last-child td{border-bottom:none}
   
   .ana-picker{flex-direction:column;gap:12px}
   #anaDateResult .card-body, #anaWeekResult .card-body { padding: 12px !important; }
+  .cmp-grid-header, .cmp-grid-row { 
+    grid-template-columns: 1fr 75px 75px 0px !important; 
+    font-size: 11px !important;
+  }
   .delta-pill { display: none; }
-  .kpi-grid, .mis-kpi-grid { 
-    display: flex !important; 
-    overflow-x: auto !important; 
-    scroll-snap-type: x mandatory; 
-    gap: 12px !important;
-    padding: 4px 16px 20px !important; /* Extra bottom padding for scroll space */
-    margin: 0 -16px 10px !important; /* Negative margin to bleed to edges */
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  .kpi-grid::-webkit-scrollbar, .mis-kpi-grid::-webkit-scrollbar { display: none; }
-  
-  .kpi-card { 
-    flex: 0 0 280px !important; 
-    scroll-snap-align: center;
-    padding: 20px !important; 
-    margin-bottom: 0 !important;
-  }
-  .kpi-val { font-size: 24px !important; }
-  table { font-size: 13px !important; }
-  .stab-bar {
-    overflow-x: auto !important;
-    scrollbar-width: none;
-    -webkit-overflow-scrolling: touch;
-    padding: 6px !important;
-  }
-  .stab-bar::-webkit-scrollbar { display: none; }
-  .stab-btn { flex: 0 0 110px !important; }
 }
 
-/* â”€ SHEET SELECTOR â”€ */
+/* ─ SHEET SELECTOR ─ */
 .sheet-sel{position:relative;display:inline-block}
 .sheet-sel select{background:var(--s2);border:1px solid var(--b2);color:var(--txt);padding:5px 28px 5px 10px;border-radius:8px;font-size:11px;font-family:'DM Sans',sans-serif;font-weight:600;cursor:pointer;appearance:none;outline:none}
-.sheet-sel::after{content:'â–¾';position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--m1);pointer-events:none}
+.sheet-sel::after{content:'▾';position:absolute;right:9px;top:50%;transform:translateY(-50%);font-size:10px;color:var(--m1);pointer-events:none}
 
-/* â”€ SHEET CARDS â”€ */
+/* ─ SHEET CARDS ─ */
 .sheet-card{background:var(--s2);border:1px solid var(--b2);border-radius:11px;padding:13px 14px;margin-bottom:10px;display:flex;align-items:center;gap:12px}
 .sheet-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .sheet-info{flex:1;min-width:0}
@@ -272,7 +258,7 @@ tbody tr:last-child td{border-bottom:none}
 .icon-btn:hover{background:var(--s1);color:var(--txt)}
 .icon-btn.danger:hover{border-color:#450a0a;color:#f87171;background:#450a0a20}
 
-/* â”€ ANALYSIS â”€ */
+/* ─ ANALYSIS ─ */
 .ana-mode-bar{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
 .ana-mode-btn{padding:8px 14px;background:var(--s2);border:1px solid var(--b2);border-radius:8px;color:var(--m1);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s}
 .ana-mode-btn.active{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.5);color:var(--amb)}
@@ -299,13 +285,13 @@ tbody tr:last-child td{border-bottom:none}
 <!-- API KEY MODAL -->
 <div class="modal-overlay" id="apiModal">
   <div class="modal-box">
-    <div style="font-size:17px;font-weight:800;margin-bottom:6px">ðŸ”‘ Set Groq API Key</div>
+    <div style="font-size:17px;font-weight:800;margin-bottom:6px">🔑 Set Groq API Key</div>
     <div style="font-size:12px;color:var(--m1);line-height:1.85;margin-bottom:16px">
       Groq provides <strong>insanely fast</strong> AI for free.<br><br>
       <strong style="color:var(--amb)">Get free key (30 seconds):</strong><br>
       1. Open <strong style="color:var(--txt)">console.groq.com</strong><br>
-      2. Sign up â†’ API Keys â†’ Create Key<br>
-      3. Copy &amp; paste below â€” stored only on this device.
+      2. Sign up → API Keys → Create Key<br>
+      3. Copy &amp; paste below — stored only on this device.
     </div>
     <input class="inp" id="apiKeyInput" type="password" placeholder="gsk_..." style="margin-bottom:12px;font-size:12px;font-family:'DM Mono',monospace">
     <div style="display:flex;gap:10px">
@@ -323,17 +309,14 @@ tbody tr:last-child td{border-bottom:none}
       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.5"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
     </div>
     <div>
-      <div style="display:flex;align-items:baseline">
-        <div class="hdr-title" id="hdrTitle">SJP Dashboard</div>
-        <span style="font-size:9px;color:var(--m1);opacity:0.6;margin-left:6px;font-family:'DM Mono',monospace">v1.1.8</span>
-      </div>
-      <div class="hdr-sub" id="hdrSub">v1.1.8 Restoration · Jagan</div>
+      <div class="hdr-title" id="hdrTitle">SJP Dashboard</div>
+      <div class="hdr-sub" id="hdrSub">MIS Dashboard · Select a sheet</div>
     </div>
   </div>
   <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
     <div class="sheet-sel">
       <select id="sheetSelectorDrop" onchange="switchActiveSheet(this.value)">
-        <option value="">â€” No sheets yet â€”</option>
+        <option value="">— No sheets yet —</option>
       </select>
     </div>
     <div style="text-align:right">
@@ -350,15 +333,15 @@ tbody tr:last-child td{border-bottom:none}
   <button class="nav-btn" data-page="costs">⚙️ Costs</button>
   <button class="nav-btn" data-page="daily">📅 Daily Log</button>
   <button class="nav-btn" data-page="mis">📑 MIS</button>
-  <button class="nav-btn" data-page="team">👥 Team</button>
-  <button class="nav-btn" data-page="intel">✨ Intelligence</button>
+  <button class="nav-btn" data-page="team">🧑‍🤝‍🧑 Team</button>
+  <button class="nav-btn" data-page="intel">✦ Intelligence</button>
   <button class="nav-btn" data-page="analysis">📈 Analysis</button>
   <button class="nav-btn" data-page="datasrc">🔗 Data Source</button>
 </div>
 
 <div class="main">
 
-<!-- â•â•â•â•â•â•â•â•â•â• OVERVIEW â•â•â•â•â•â•â•â•â•â• -->
+<!-- ══════════ OVERVIEW ══════════ -->
 <div class="page active" id="page-overview">
   <div class="kpi-grid" id="kpiGrid" style="margin-bottom:12px"></div>
 
@@ -386,14 +369,14 @@ tbody tr:last-child td{border-bottom:none}
       <div id="revGapInfo" style="font-size:10px;color:var(--m1);text-align:right;line-height:1.65;flex-shrink:0"></div>
     </div>
     <div class="prog-track"><div class="prog-fill" id="revProgFill"></div></div>
-    <div class="prog-labels"><span>â‚¹0</span><span id="revAchText" style="font-weight:700"></span><span id="revTargetText"></span></div>
+    <div class="prog-labels"><span>₹0</span><span id="revAchText" style="font-weight:700"></span><span id="revTargetText"></span></div>
   </div>
 
   <div class="grid2" style="margin-bottom:12px">
     <div class="card card-body">
-      <div class="card-title">ðŸ† Top 3 Revenue Days</div>
+      <div class="card-title">🏆 Top 3 Revenue Days</div>
       <div id="top3Days"></div>
-      <div class="card-title" style="margin-top:14px">ðŸ“‰ Bottom 3 Revenue Days</div>
+      <div class="card-title" style="margin-top:14px">📉 Bottom 3 Revenue Days</div>
       <div id="bot3Days"></div>
     </div>
     <div class="card card-body">
@@ -413,15 +396,15 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 
   <div class="card card-body">
-    <div class="card-title">Daily Revenue Trend â€” April 2026</div>
+    <div class="card-title">Daily Revenue Trend — April 2026</div>
     <div class="chart-wrap">
-      <button class="exp-btn" onclick="expandChart('chOv', 'Daily Revenue Trend')">â›¶</button>
+      <button class="exp-btn" onclick="expandChart('chOv', 'Daily Revenue Trend')">⛶</button>
       <div style="position:relative;height:190px"><canvas id="chartOverview"></canvas></div>
     </div>
   </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â• REVENUE â•â•â•â•â•â•â•â•â•â• -->
+<!-- ══════════ REVENUE ══════════ -->
 <div class="page" id="page-revenue">
   <div class="grid2" style="grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px;">
     <div class="card card-body" style="padding: 14px;">
@@ -445,12 +428,12 @@ tbody tr:last-child td{border-bottom:none}
   <div class="card card-body" style="margin-bottom:12px">
     <div class="card-title">Daily Revenue vs Target Line</div>
     <div class="chart-wrap">
-      <button class="exp-btn" onclick="expandChart('chRB', 'Revenue vs Target')">â›¶</button>
+      <button class="exp-btn" onclick="expandChart('chRB', 'Revenue vs Target')">⛶</button>
       <div style="position:relative;height:230px"><canvas id="chartRevBar"></canvas></div>
     </div>
     <div style="display:flex;gap:16px;justify-content:center;margin-top:8px;font-size:10px;color:var(--m1)">
-      <span style="color:var(--grn)">â–  Above target</span>
-      <span style="color:var(--amb)">â–  Below target</span>
+      <span style="color:var(--grn)">■ Above target</span>
+      <span style="color:var(--amb)">■ Below target</span>
       <span style="color:var(--red)">-- Daily target</span>
     </div>
   </div>
@@ -458,21 +441,21 @@ tbody tr:last-child td{border-bottom:none}
     <div class="card card-body">
       <div class="card-title">7-Day Rolling Average</div>
       <div class="chart-wrap">
-        <button class="exp-btn" onclick="expandChart('chRoll', '7-Day Rolling Avg')">â›¶</button>
+        <button class="exp-btn" onclick="expandChart('chRoll', '7-Day Rolling Avg')">⛶</button>
         <div style="position:relative;height:165px"><canvas id="chartRolling"></canvas></div>
       </div>
     </div>
     <div class="card card-body">
       <div class="card-title">Cumulative vs Target Pace</div>
       <div class="chart-wrap">
-        <button class="exp-btn" onclick="expandChart('chCum', 'Cumulative Revenue')">â›¶</button>
+        <button class="exp-btn" onclick="expandChart('chCum', 'Cumulative Revenue')">⛶</button>
         <div style="position:relative;height:165px"><canvas id="chartCumul"></canvas></div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â• COSTS â•â•â•â•â•â•â•â•â•â• -->
+<!-- ══════════ COSTS ══════════ -->
 <div class="page" id="page-costs">
   <div id="dynamicCostsContainer"></div>
   <div class="card card-body">
@@ -489,73 +472,27 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â• DAILY LOG â•â•â•â•â•â•â•â•â•â• -->
+<!-- ══════════ DAILY LOG ══════════ -->
 <div class="page" id="page-daily">
   <div class="card">
-    <div class="card-body" style="padding-bottom:0">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div class="card-title" id="dailyLogTitle">Day-by-Day MIS Log</div>
-        <button class="btn btn-ghost" onclick="exportDailyLogCSV()" style="margin-bottom:14px">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-          Export CSV
-        </button>
-      </div>
-    </div>
+    <div class="card-body" style="padding-bottom:0"><div class="card-title">Day-by-Day MIS Log — SJP April 2026</div></div>
     <style>
-      .tbl-freeze { 
-        max-height: 88vh; 
-        overflow: auto; 
-        position: relative;
-        width: 100%;
-        background: var(--bg);
-        border: 1px solid var(--b1);
-      }
-      .tbl-freeze table { border-collapse: separate; border-spacing: 0; min-width: 1300px; font-size: 15px; width: 100%; }
+      .tbl-freeze { max-height: 65vh; overflow: auto; position: relative; }
+      .tbl-freeze table { border-collapse: separate; border-spacing: 0; min-width: 1000px; }
+      .tbl-freeze th { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 2px solid var(--b2); box-shadow: 0 2px 0 var(--b2); }
+      .tbl-freeze tfoot td { position: sticky; bottom: 0; z-index: 10; background: var(--bg); border-top: 2px solid var(--b2); box-shadow: 0 -2px 0 var(--b2); }
       
-      /* 1. Header Sticky (Row 1) */
-      .tbl-freeze th { 
-        position: sticky !important; 
-        top: 0; 
-        z-index: 50; 
-        background: var(--s2) !important; 
-        border-bottom: 2px solid var(--b2); 
-        padding: 12px;
-        color: var(--txt);
-      }
+      /* Freeze first 4 columns exactly */
+      .tbl-freeze th:nth-child(1), .tbl-freeze td:nth-child(1) { position: sticky; left: 0; z-index: 11; background: #0d1117; width: 100px; min-width: 100px; max-width: 100px; }
+      .tbl-freeze th:nth-child(2), .tbl-freeze td:nth-child(2) { position: sticky; left: 100px; z-index: 11; background: #0d1117; width: 120px; min-width: 120px; max-width: 120px; }
+      .tbl-freeze th:nth-child(3), .tbl-freeze td:nth-child(3) { position: sticky; left: 220px; z-index: 11; background: #0d1117; width: 150px; min-width: 150px; max-width: 150px; }
+      .tbl-freeze th:nth-child(4), .tbl-freeze td:nth-child(4) { position: sticky; left: 370px; z-index: 11; background: #0d1117; width: 150px; min-width: 150px; max-width: 150px; }
       
-      /* 2. Column Sticky (Col 1) */
-      .tbl-freeze th:nth-child(1), 
-      .tbl-freeze td:nth-child(1) { 
-        position: sticky !important; 
-        left: 0; 
-        z-index: 60; 
-        background: #0d1117 !important; 
-        width: 130px; min-width: 130px; max-width: 130px; 
-        border-right: 2px solid var(--b2);
-        box-shadow: 2px 0 5px rgba(0,0,0,0.3);
-      }
+      /* Header intersections need higher z-index */
+      .tbl-freeze th:nth-child(1), .tbl-freeze th:nth-child(2), .tbl-freeze th:nth-child(3), .tbl-freeze th:nth-child(4) { z-index: 12; background: var(--bg); }
+      .tbl-freeze tfoot td:nth-child(1), .tbl-freeze tfoot td:nth-child(2), .tbl-freeze tfoot td:nth-child(3), .tbl-freeze tfoot td:nth-child(4) { z-index: 12; background: var(--bg); }
       
-      /* 3. Header Intersection (Row 1, Col 1) */
-      .tbl-freeze th:nth-child(1) { 
-        z-index: 70; 
-        background: #1e293b !important; 
-      }
-      
-      /* 4. Footer Sticky (Last Row) */
-      .tbl-freeze tfoot td { 
-        position: sticky !important; 
-        bottom: 0; 
-        z-index: 50; 
-        background: var(--s2) !important; 
-        border-top: 2px solid var(--b2);
-      }
-      .tbl-freeze tfoot td:nth-child(1) { 
-        z-index: 60; 
-        background: #1e293b !important; 
-      }
-
-      .tbl-freeze td { padding: 14px 12px; border-bottom: 1px solid var(--b1); }
-      .tbl-freeze .num { text-align: right; }
+      .tbl-freeze td { border-bottom: 1px solid var(--b1); }
     </style>
     <div class="tbl-freeze" style="padding:0 0 16px">
       <table>
@@ -567,16 +504,16 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â• INTELLIGENCE â•â•â•â•â•â•â•â•â•â• -->
+<!-- ══════════ INTELLIGENCE ══════════ -->
 <div class="page" id="page-intel">
-  <div style="font-size:17px;font-weight:800;margin-bottom:4px">âœ¦ Intelligence Centre</div>
-  <div style="font-size:11px;color:var(--m1);margin-bottom:18px">Store analysis, forecasting &amp; message drafting â€” SJP data powered</div>
+  <div style="font-size:17px;font-weight:800;margin-bottom:4px">✦ Intelligence Centre</div>
+  <div style="font-size:11px;color:var(--m1);margin-bottom:18px">Store analysis, forecasting &amp; message drafting — SJP data powered</div>
 
   <div class="stab-bar">
-    <button class="stab-btn active" onclick="switchSubTab('analysis', this)">ðŸ“Š Analysis</button>
-    <button class="stab-btn" onclick="switchSubTab('forecast', this)">ðŸ”® Forecast</button>
-    <button class="stab-btn" onclick="switchSubTab('messages', this)">âœ‰ï¸ Messages</button>
-    <button class="stab-btn" onclick="switchSubTab('chat', this)">ðŸ’¬ AI Chat</button>
+    <button class="stab-btn active" onclick="switchSubTab('analysis', this)">📊 Analysis</button>
+    <button class="stab-btn" onclick="switchSubTab('forecast', this)">🔮 Forecast</button>
+    <button class="stab-btn" onclick="switchSubTab('messages', this)">✉️ Messages</button>
+    <button class="stab-btn" onclick="switchSubTab('chat', this)">💬 AI Chat</button>
   </div>
 
   <!-- Analysis -->
@@ -585,11 +522,11 @@ tbody tr:last-child td{border-bottom:none}
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:11px;color:var(--m1)">API Key: <span id="keyStatusBadge" style="font-weight:700">Checking...</span></div>
         <div style="display:flex;gap:7px">
-          <button class="btn btn-ghost" style="padding:5px 10px;font-size:10px" onclick="openModal('apiModal')">ðŸ”‘ Set Key</button>
+          <button class="btn btn-ghost" style="padding:5px 10px;font-size:10px" onclick="openModal('apiModal')">🔑 Set Key</button>
           <button class="btn btn-ghost" style="padding:5px 10px;font-size:10px;color:#f87171;border-color:#450a0a" onclick="clearApiKey()">Clear</button>
         </div>
       </div>
-      <div style="font-size:12px;color:var(--m2);line-height:1.75;margin-bottom:14px">Runs a comprehensive performance analysis on your SJP data â€” revenue health, cost efficiency, day-of-week patterns, and top action items for today.</div>
+      <div style="font-size:12px;color:var(--m2);line-height:1.75;margin-bottom:14px">Runs a comprehensive performance analysis on your SJP data — revenue health, cost efficiency, day-of-week patterns, and top action items for today.</div>
       <button class="btn btn-primary" id="btnAnalysis" onclick="runIntel('analysis')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Run Deep Analysis
@@ -597,9 +534,9 @@ tbody tr:last-child td{border-bottom:none}
     </div>
     <div id="wrapAnalysis" style="display:none">
       <div class="out-head">
-        <span class="out-label">âœ¦ Analysis Report</span>
+        <span class="out-label">✦ Analysis Report</span>
         <div class="out-actions">
-          <button class="btn btn-ghost" onclick="copyText('txtAnalysis')">ðŸ“‹ Copy</button>
+          <button class="btn btn-ghost" onclick="copyText('txtAnalysis')">📋 Copy</button>
         </div>
       </div>
       <div class="out-box" id="txtAnalysis"></div>
@@ -617,9 +554,9 @@ tbody tr:last-child td{border-bottom:none}
     </div>
     <div id="wrapForecast" style="display:none">
       <div class="out-head">
-        <span class="out-label">âœ¦ Forecast Report</span>
+        <span class="out-label">✦ Forecast Report</span>
         <div class="out-actions">
-          <button class="btn btn-ghost" onclick="copyText('txtForecast')">ðŸ“‹ Copy</button>
+          <button class="btn btn-ghost" onclick="copyText('txtForecast')">📋 Copy</button>
         </div>
       </div>
       <div class="out-box" id="txtForecast"></div>
@@ -632,19 +569,19 @@ tbody tr:last-child td{border-bottom:none}
       <div class="card-title">Choose Message Type</div>
       <div class="msg-grid">
         <button class="msg-opt active" data-type="daily_brief" onclick="pickMsg(this)">
-          <div class="msg-opt-t">ðŸ“‹ Daily Team Brief</div>
+          <div class="msg-opt-t">📋 Daily Team Brief</div>
           <div class="msg-opt-s">WhatsApp update for store team</div>
         </button>
         <button class="msg-opt" data-type="mgmt_report" onclick="pickMsg(this)">
-          <div class="msg-opt-t">ðŸ“ˆ Management Report</div>
+          <div class="msg-opt-t">📈 Management Report</div>
           <div class="msg-opt-s">Summary for senior management</div>
         </button>
         <button class="msg-opt" data-type="cost_alert" onclick="pickMsg(this)">
-          <div class="msg-opt-t">ðŸš¨ Cost Control Alert</div>
+          <div class="msg-opt-t">🚨 Cost Control Alert</div>
           <div class="msg-opt-s">Discipline message to team</div>
         </button>
         <button class="msg-opt" data-type="vendor_follow" onclick="pickMsg(this)">
-          <div class="msg-opt-t">ðŸª Vendor Follow-up</div>
+          <div class="msg-opt-t">🏪 Vendor Follow-up</div>
           <div class="msg-opt-s">Store manager follow-up</div>
         </button>
       </div>
@@ -655,9 +592,9 @@ tbody tr:last-child td{border-bottom:none}
     </div>
     <div id="wrapMessage" style="display:none">
       <div class="out-head">
-        <span class="out-label">âœ¦ Drafted Message</span>
+        <span class="out-label">✦ Drafted Message</span>
         <div class="out-actions">
-          <button class="btn btn-ghost" onclick="copyText('txtMessage')">ðŸ“‹ Copy</button>
+          <button class="btn btn-ghost" onclick="copyText('txtMessage')">📋 Copy</button>
           <a id="waLink" href="#" target="_blank" class="btn-wa">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413z"/></svg>
             Send on WhatsApp
@@ -672,7 +609,7 @@ tbody tr:last-child td{border-bottom:none}
   <div id="subtab-chat" style="display:none">
     <div class="card card-body" style="margin-bottom:12px; display:flex; flex-direction:column; height:500px; padding:0; overflow:hidden;">
       <div style="background:var(--s2); padding:10px 15px; font-weight:800; border-bottom:1px solid var(--b1); font-size:13px; color:var(--txt);">
-        ðŸ’¬ Ask AI About Your Data
+        💬 Ask AI About Your Data
         <div style="font-size:10px; color:var(--m1); font-weight:normal;">AI has access to all connected sheets, MIS, and Team data.</div>
       </div>
       <div id="chatHistory" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:12px;">
@@ -692,9 +629,9 @@ tbody tr:last-child td{border-bottom:none}
 
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â• TEAM / EMPLOYEES â•â•â•â•â•â•â•â•â•â• -->
+<!-- ══════════ TEAM / EMPLOYEES ══════════ -->
 <div class="page" id="page-team">
-  <div style="font-size:17px;font-weight:800;margin-bottom:4px">ðŸ§‘â€ðŸ¤â€ðŸ§‘ Team & Employee Insights</div>
+  <div style="font-size:17px;font-weight:800;margin-bottom:4px">🧑‍🤝‍🧑 Team & Employee Insights</div>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px;flex-wrap:wrap">
     <div style="font-size:11px;color:var(--m1);flex:1;min-width:200px">Onboarding analytics and employee distribution.</div>
     <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
@@ -716,7 +653,7 @@ tbody tr:last-child td{border-bottom:none}
         <option value="3m">Last 3 Months</option>
         <option value="custom">Custom Range...</option>
       </select>
-      <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="exportTeamData()">ðŸ“¥ Export CSV</button>
+      <button class="btn btn-ghost" style="padding:4px 10px;font-size:11px" onclick="exportTeamData()">📥 Export CSV</button>
     </div>
   </div>
   
@@ -726,14 +663,14 @@ tbody tr:last-child td{border-bottom:none}
     <div class="card card-body">
       <div class="card-title">Location Distribution</div>
       <div class="chart-wrap">
-        <button class="exp-btn" onclick="expandChart('chTeamLoc', 'Location Distribution')">â›¶</button>
+        <button class="exp-btn" onclick="expandChart('chTeamLoc', 'Location Distribution')">⛶</button>
         <div style="position:relative;height:220px"><canvas id="chartTeamLoc"></canvas></div>
       </div>
     </div>
     <div class="card card-body">
       <div class="card-title">Hiring Trend (Month-wise)</div>
       <div class="chart-wrap">
-        <button class="exp-btn" onclick="expandChart('chTeamMonth', 'Hiring Trend')">â›¶</button>
+        <button class="exp-btn" onclick="expandChart('chTeamMonth', 'Hiring Trend')">⛶</button>
         <div style="position:relative;height:220px"><canvas id="chartTeamMonth"></canvas></div>
       </div>
     </div>
@@ -742,7 +679,7 @@ tbody tr:last-child td{border-bottom:none}
   <div class="card card-body" style="margin-top:12px">
     <div class="card-title">Designation Distribution</div>
     <div class="chart-wrap">
-      <button class="exp-btn" onclick="expandChart('chTeamDesig', 'Designation Distribution')">â›¶</button>
+      <button class="exp-btn" onclick="expandChart('chTeamDesig', 'Designation Distribution')">⛶</button>
       <div style="position:relative;height:220px"><canvas id="chartTeamDesig"></canvas></div>
     </div>
   </div>
@@ -751,7 +688,7 @@ tbody tr:last-child td{border-bottom:none}
     <div class="card-title">Referral Analytics (Top Referrers)</div>
     <div style="font-size:10px;color:var(--m1);margin-top:-6px;margin-bottom:10px">Click a bar to see referred employees.</div>
     <div class="chart-wrap">
-      <button class="exp-btn" onclick="expandChart('chTeamRef', 'Referral Analytics')">â›¶</button>
+      <button class="exp-btn" onclick="expandChart('chTeamRef', 'Referral Analytics')">⛶</button>
       <div style="position:relative;height:260px"><canvas id="chartTeamRef"></canvas></div>
     </div>
   </div>
@@ -761,30 +698,30 @@ tbody tr:last-child td{border-bottom:none}
     <div class="modal-card" style="max-width:500px;width:95%">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px">
         <div style="font-weight:800;font-size:16px" id="teamModalTitle">Referred Employees</div>
-        <button class="btn btn-ghost" onclick="closeTeamModal()" style="padding:5px 10px">âœ•</button>
+        <button class="btn btn-ghost" onclick="closeTeamModal()" style="padding:5px 10px">✕</button>
       </div>
       <div id="teamModalBody" style="max-height:60vh;overflow-y:auto;font-size:12px"></div>
     </div>
   </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â• MIS TAB â•â•â•â•â•â•â•â•â•â• -->
+<!-- ══════════ MIS TAB ══════════ -->
 <div class="page" id="page-mis">
   <!-- Header -->
   <div style="margin-bottom:20px;display:flex;justify-content:space-between;align-items:center">
     <div>
       <div style="font-size:22px;font-weight:900;letter-spacing:-0.5px;color:var(--txt)">MIS Intelligence Centre</div>
-      <div style="font-size:12px;color:var(--m1);margin-top:3px">P&L Â· Visuals Â· Advisory Â· Business Intelligence</div>
+      <div style="font-size:12px;color:var(--m1);margin-top:3px">P&L · Visuals · Advisory · Business Intelligence</div>
     </div>
-    <button class="btn btn-ghost" style="padding:8px 14px;border-radius:12px" onclick="syncAllSheets()">ðŸ”„ Sync</button>
+    <button class="btn btn-ghost" style="padding:8px 14px;border-radius:12px" onclick="syncAllSheets()">🔄 Sync</button>
   </div>
 
   <!-- Sub-Tab Bar -->
   <div class="stab-bar" style="margin-bottom:20px;background:var(--s1);padding:5px;border-radius:14px;border:1px solid var(--b1)">
-    <button class="stab-btn active" id="misBtnPL"       onclick="switchMisTab('pl',this)">ðŸ“‹ P&amp;L Data</button>
-    <button class="stab-btn"        id="misBtnVisuals"  onclick="switchMisTab('visuals',this)">ðŸ“Š Visuals</button>
-    <button class="stab-btn"        id="misBtnAdvice"   onclick="switchMisTab('advice',this)">ðŸ§  Analysis</button>
-    <button class="stab-btn"        id="misBtnBI"       onclick="switchMisTab('bi',this)">ðŸŽ¯ Intelligence</button>
+    <button class="stab-btn active" id="misBtnPL"       onclick="switchMisTab('pl',this)">📋 P&amp;L Data</button>
+    <button class="stab-btn"        id="misBtnVisuals"  onclick="switchMisTab('visuals',this)">📊 Visuals</button>
+    <button class="stab-btn"        id="misBtnAdvice"   onclick="switchMisTab('advice',this)">🧠 Analysis</button>
+    <button class="stab-btn"        id="misBtnBI"       onclick="switchMisTab('bi',this)">🎯 Intelligence</button>
   </div>
 
   <!-- TAB 1: P&L Data -->
@@ -835,9 +772,7 @@ tbody tr:last-child td{border-bottom:none}
   <!-- TAB 4: Business Intelligence -->
   <div id="misTab-bi" style="display:none">
     <div id="misBIContent">
-      <div class="card card-body" style="text-align:center;padding:40px">
-        <div style="font-size:14px;color:var(--m1)">Please ensure you have a tab named "MIS" in your Google Sheet.</div>
-      </div>
+      <div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">Sync data first to view intelligence.</div>
     </div>
   </div>
 
@@ -870,19 +805,19 @@ tbody tr:last-child td{border-bottom:none}
   <div id="an-overview">
     <div class="grid3" style="margin-bottom:20px">
       <div class="kpi-card">
-        <div class="kpi-lbl">NET OPERATING MARGIN</div>
+        <div class="kpi-lbl">OP. MARGIN (MTD)</div>
         <div class="kpi-val" id="anKpiMargin" style="color:var(--grn)">--</div>
-        <div class="kpi-sub" id="anKpiMarginSub">Based on sheet run rate</div>
+        <div class="kpi-sub" id="anKpiMarginSub">Revenue minus variable costs</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">RUN RATE REVENUE</div>
+        <div class="kpi-lbl">REVENUE RUN RATE</div>
         <div class="kpi-val" id="anKpiRunRate" style="color:var(--amb)">--</div>
-        <div class="kpi-sub" id="anKpiRunRateSub">Official sheet projection</div>
+        <div class="kpi-sub" id="anKpiRunRateSub">Projected month-end closing</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-lbl">LM TILL DAY RUN RATE</div>
+        <div class="kpi-lbl">PEAK PERFORMANCE</div>
         <div class="kpi-val" id="anKpiPeak" style="color:var(--pur)">--</div>
-        <div class="kpi-sub" id="anKpiPeakSub">Comparison vs last month</div>
+        <div class="kpi-sub" id="anKpiPeakSub">Highest single-day achievement</div>
       </div>
     </div>
 
@@ -951,16 +886,16 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
-<!-- â•â•â•â•â•â•â•â•â•â• DATA SOURCE â•â•â•â•â•â•â•â•â•â• -->
+<!-- ══════════ DATA SOURCE ══════════ -->
 <div class="page" id="page-datasrc">
-  <div style="font-size:17px;font-weight:800;margin-bottom:4px">ðŸ”— Data Source</div>
-  <div style="font-size:12px;color:var(--m1);margin-bottom:16px">Manage multiple Google Sheets â€” one per month. Each needs its own Apps Script /exec URL.</div>
+  <div style="font-size:17px;font-weight:800;margin-bottom:4px">🔗 Data Source</div>
+  <div style="font-size:12px;color:var(--m1);margin-bottom:16px">Manage multiple Google Sheets — one per month. Each needs its own Apps Script /exec URL.</div>
   <div class="card card-body" style="margin-bottom:12px">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-      <div class="card-title" style="margin:0">ðŸ“‹ Connected Sheets</div>
+      <div class="card-title" style="margin:0">📋 Connected Sheets</div>
       <div style="display:flex;gap:8px">
-        <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="syncAllSheets()">ðŸ”„ Sync All</button>
-        <button class="btn btn-primary" style="font-size:11px;padding:6px 14px;width:auto" onclick="openAddSheet()">ï¼‹ Add Sheet</button>
+        <button class="btn btn-ghost" style="font-size:11px;padding:6px 12px" onclick="syncAllSheets()">🔄 Sync All</button>
+        <button class="btn btn-primary" style="font-size:11px;padding:6px 14px;width:auto" onclick="openAddSheet()">＋ Add Sheet</button>
       </div>
     </div>
     <div id="sheetListEl"><div style="text-align:center;padding:24px;color:var(--m1);font-size:12px">No sheets added yet. Click "+ Add Sheet" to connect your first month.</div></div>
@@ -973,9 +908,9 @@ tbody tr:last-child td{border-bottom:none}
 <!-- ADD / EDIT SHEET MODAL -->
 <div class="modal-overlay" id="addSheetModal">
   <div class="modal-box">
-    <div style="font-size:17px;font-weight:800;margin-bottom:6px" id="addSheetModalTitle">ï¼‹ Add Sheet</div>
-    <div style="font-size:12px;color:var(--m1);margin-bottom:16px;line-height:1.75">Give a label (e.g. "SJP â€” April 2026") and paste the Apps Script <code style="background:var(--s2);padding:1px 5px;border-radius:4px">/exec</code> URL.</div>
-    <input class="inp" id="addSheetLabel" placeholder="Label: e.g. SJP â€” May 2026" style="margin-bottom:10px">
+    <div style="font-size:17px;font-weight:800;margin-bottom:6px" id="addSheetModalTitle">＋ Add Sheet</div>
+    <div style="font-size:12px;color:var(--m1);margin-bottom:16px;line-height:1.75">Give a label (e.g. "SJP — April 2026") and paste the Apps Script <code style="background:var(--s2);padding:1px 5px;border-radius:4px">/exec</code> URL.</div>
+    <input class="inp" id="addSheetLabel" placeholder="Label: e.g. SJP — May 2026" style="margin-bottom:10px">
     <input class="inp" id="addSheetUrl" placeholder="https://script.google.com/macros/s/.../exec" style="margin-bottom:10px;font-size:11px">
     <div style="display:flex;gap:8px">
       <button class="btn btn-primary" style="flex:1" onclick="saveSheet()">Save &amp; Sync</button>
@@ -991,9 +926,9 @@ tbody tr:last-child td{border-bottom:none}
 
 <script>
 "use strict";
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 1. RAW DATA â€” populated dynamically from Apps Script
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
+// 1. RAW DATA — populated dynamically from Apps Script
+// ═══════════════════════════════════════════════
 var DATES = [];
 var REV   = [];
 var RM    = [];
@@ -1011,26 +946,26 @@ var TARGET = 14200000;
 var MONTH_DAYS = 30;
 var DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxKEGzsKYdRMFxA1nWjVtifaPMxSzS7Pqqi-lL33UqlRlP--FI1oQK6eDiyvI1zPLVI/exec';
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 2. HELPERS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 function sum(a){ var t=0; for(var i=0;i<a.length;i++) t+=a[i]; return t; }
 function avg(a){ return a.length ? sum(a)/a.length : 0; }
 function clamp(v,lo,hi){ return Math.min(Math.max(v,lo),hi); }
 function rnd(n){ return Math.round(n); }
 function fmtN(n,d){
-  if(n==null||isNaN(n)) return 'â€”';
+  if(n==null||isNaN(n)) return '—';
   return new Intl.NumberFormat('en-IN',{maximumFractionDigits:d||0}).format(n);
 }
 function fmtL(n){
   var abs = Math.abs(n);
-  return abs>=100000 ? 'â‚¹'+(n/100000).toFixed(2)+'L' : 'â‚¹'+fmtN(n);
+  return abs>=100000 ? '₹'+(n/100000).toFixed(2)+'L' : '₹'+fmtN(n);
 }
 function shortD(d){ return String(d); }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-// 3. LIVE METRICS  â€” called fresh every render
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
+// 3. LIVE METRICS  — called fresh every render
+// ═══════════════════════════════════════════════
 function calcMetrics(){
   var n = DATES.length;
   var indent = [], ipc = [];
@@ -1044,9 +979,7 @@ function calcMetrics(){
   var tWatV=sum(WATV), tWatQ=sum(WATQ), tPetty=sum(PETTY);
   var dLeft  = Math.max(MONTH_DAYS-n,0);
   var dAvg   = tRev/n;
-  // USE RUN RATE FROM SHEET IF AVAILABLE
-  var rrRev  = (window.RUN_RATES && (window.RUN_RATES['Net Revenue'] || window.RUN_RATES['Total Revenue'])) || 0;
-  var proj   = rrRev || (dAvg*MONTH_DAYS);
+  var proj   = dAvg*MONTH_DAYS;
   var gap    = TARGET-tRev;
   var rpd    = gap/dLeft;
   var ach    = (tRev/TARGET)*100;
@@ -1131,19 +1064,17 @@ function calcMetrics(){
     top5Costs: top5Costs,
     revCol: ach>=95?'#22c55e':ach>=80?'#f59e0b':'#ef4444',
     indCol: ipcMTD<=29?'#22c55e':ipcMTD<=32?'#f59e0b':'#ef4444',
-    totNOI: tRev - tInd - tPkg - tHK - tGasV - tWatV - tPetty,
-    noiPct: tRev > 0 ? ((tRev - tInd - tPkg - tHK - tGasV - tWatV - tPetty)/tRev*100) : 0
   };
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 4. RENDER UI
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 function renderUI(){
   var m = calcMetrics();
 
   // Header
-  document.getElementById('hdrDays').textContent = 'Day '+m.n+' of '+MONTH_DAYS+' Â· '+m.dLeft+' days left';
+  document.getElementById('hdrDays').textContent = 'Day '+m.n+' of '+MONTH_DAYS+' · '+m.dLeft+' days left';
   document.getElementById('hdrDate').textContent = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
   
   // Update section title if we have an active sheet
@@ -1151,18 +1082,18 @@ function renderUI(){
     var titleEl = document.getElementById('revBarTitle');
     if(titleEl) {
       var parts = window.activeSheetId.split('__');
-      if(parts.length > 1) titleEl.textContent = 'Revenue vs Target â€” ' + parts[1];
+      if(parts.length > 1) titleEl.textContent = 'Revenue vs Target — ' + parts[1];
     }
   }
 
-  // â”€â”€ KPIs â”€â”€
+  // ── KPIs ──
   var kpis = [
-    {l:'MTD REVENUE',   v:fmtL(m.tRev),          s:m.ach.toFixed(1)+'% of â‚¹'+(TARGET/100000).toFixed(0)+'L target',      c:m.revCol},
+    {l:'MTD REVENUE',   v:fmtL(m.tRev),          s:m.ach.toFixed(1)+'% of ₹'+(TARGET/100000).toFixed(0)+'L target',      c:m.revCol},
     {l:'DAILY AVERAGE', v:fmtL(rnd(m.dAvg)),      s:'Last 7d avg: '+fmtL(rnd(m.l7avg)),                                   c:'#60a5fa'},
-    {l:'PROJECTED MTH', v:fmtL(rnd(m.proj)),      s:m.proj>=TARGET?'âœ… On track':'âš  Gap â‚¹'+((TARGET-m.proj)/100000).toFixed(1)+'L', c:m.proj>=TARGET?'#22c55e':'#f59e0b'},
-    {l:'INDENT % MTD',  v:m.ipcMTD.toFixed(1)+'%',s:'RM+CP '+fmtL(m.tInd)+' Â· Target 29%',                               c:m.indCol},
-    {l:'GAS MTD (GAIL)',v:fmtL(m.tGasV),          s:fmtN(m.tGasU,0)+' units Â· '+m.gasP.toFixed(1)+'% of rev',            c:'#a78bfa'},
-    {l:'WATER MTD',     v:fmtL(m.tWatV),          s:fmtN(m.tWatQ,1)+' tankers Â· '+m.watP.toFixed(1)+'% of rev',          c:'#38bdf8'},
+    {l:'PROJECTED MTH', v:fmtL(rnd(m.proj)),      s:m.proj>=TARGET?'✅ On track':'⚠ Gap ₹'+((TARGET-m.proj)/100000).toFixed(1)+'L', c:m.proj>=TARGET?'#22c55e':'#f59e0b'},
+    {l:'INDENT % MTD',  v:m.ipcMTD.toFixed(1)+'%',s:'RM+CP '+fmtL(m.tInd)+' · Target 29%',                               c:m.indCol},
+    {l:'GAS MTD (GAIL)',v:fmtL(m.tGasV),          s:fmtN(m.tGasU,0)+' units · '+m.gasP.toFixed(1)+'% of rev',            c:'#a78bfa'},
+    {l:'WATER MTD',     v:fmtL(m.tWatV),          s:fmtN(m.tWatQ,1)+' tankers · '+m.watP.toFixed(1)+'% of rev',          c:'#38bdf8'},
   ];
   document.getElementById('kpiGrid').innerHTML = kpis.map(function(k){
     return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
@@ -1170,26 +1101,26 @@ function renderUI(){
           +'<div class="kpi-sub">'+k.s+'</div></div>';
   }).join('');
 
-  // â”€â”€ Revenue progress â”€â”€
+  // ── Revenue progress ──
   document.getElementById('revProgFill').style.width = clamp(m.ach,0,100)+'%';
   document.getElementById('revProgFill').style.background = m.revCol;
   document.getElementById('revAchText').textContent = m.ach.toFixed(1)+'% achieved';
   document.getElementById('revAchText').style.color = m.revCol;
   document.getElementById('revTargetText').textContent = fmtL(TARGET);
-  document.getElementById('revGapInfo').innerHTML = 'Gap: â‚¹'+fmtN(rnd(m.gap))+'<br>Need â‚¹'+fmtN(rnd(m.rpd))+'/day';
+  document.getElementById('revGapInfo').innerHTML = 'Gap: ₹'+fmtN(rnd(m.gap))+'<br>Need ₹'+fmtN(rnd(m.rpd))+'/day';
 
-  // â”€â”€ Top / Bot days â”€â”€
-  var med=['ðŸ¥‡','ðŸ¥ˆ','ðŸ¥‰'];
+  // ── Top / Bot days ──
+  var med=['🥇','🥈','🥉'];
   document.getElementById('top3Days').innerHTML = m.top3.map(function(d,i){
     return '<div class="day-row"><span style="font-size:12px">'+med[i]+' '+d.d+'</span>'
           +'<span style="color:#22c55e;font-family:\'DM Mono\',monospace;font-size:12px;font-weight:700">'+fmtL(d.v)+'</span></div>';
   }).join('');
   document.getElementById('bot3Days').innerHTML = m.bot3.map(function(d){
-    return '<div class="day-row"><span style="color:#64748b;font-size:12px">ðŸš© '+d.d+'</span>'
+    return '<div class="day-row"><span style="color:#64748b;font-size:12px">🚩 '+d.d+'</span>'
           +'<span style="color:#ef4444;font-family:\'DM Mono\',monospace;font-size:12px">'+fmtL(d.v)+'</span></div>';
   }).join('');
 
-  // â”€â”€ Overview MTD Summary Table â”€â”€
+  // ── Overview MTD Summary Table ──
   var mtdHtml = '';
   var pkeys = ['Net Revenue'].concat(Object.keys(window.DYNAMIC_DATA||{}));
   pkeys.forEach(function(k){
@@ -1199,7 +1130,7 @@ function renderUI(){
       var rr = window.RUN_RATES[k] || 0;
       var mtd = window.MTDS[k] || 0;
       
-      var pctHtml = 'â€”';
+      var pctHtml = '—';
       if(kLow !== 'net revenue' && window.MTDS['Net Revenue']) {
         var pct = ((mtd / window.MTDS['Net Revenue']) * 100).toFixed(1);
         pctHtml = pct + '%';
@@ -1207,9 +1138,9 @@ function renderUI(){
       
       mtdHtml += '<tr>'
         + '<td style="color:'+(kLow==='net revenue'?'#facc15':'#f1f5f9')+';font-weight:'+(kLow==='net revenue'?700:500)+'">'+k+'</td>'
-        + '<td class="num" style="font-family:\'DM Mono\',monospace">â‚¹'+fmtN(tgt)+'</td>'
-        + '<td class="num" style="font-family:\'DM Mono\',monospace;color:#38bdf8">â‚¹'+fmtN(rr)+'</td>'
-        + '<td class="num" style="font-family:\'DM Mono\',monospace;color:#facc15;font-weight:700">â‚¹'+fmtN(mtd)+'</td>'
+        + '<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(tgt)+'</td>'
+        + '<td class="num" style="font-family:\'DM Mono\',monospace;color:#38bdf8">₹'+fmtN(rr)+'</td>'
+        + '<td class="num" style="font-family:\'DM Mono\',monospace;color:#facc15;font-weight:700">₹'+fmtN(mtd)+'</td>'
         + '<td class="num" style="color:#94a3b8">'+pctHtml+'</td>'
         + '</tr>';
     }
@@ -1217,7 +1148,7 @@ function renderUI(){
   var overviewTbl = document.getElementById('overviewMtdTbl');
   if(overviewTbl) overviewTbl.innerHTML = mtdHtml;
 
-  // â”€â”€ Cost ratio bars â”€â”€
+  // ── Cost ratio bars ──
   var ratios=[
     {l:'RM+CP Indent',v:m.ipcMTD,t:29,  c:m.indCol},
     {l:'Gas (GAIL)',  v:m.gasP,  t:2.5, c:m.gasP<=2.5?'#22c55e':'#f59e0b'},
@@ -1239,10 +1170,10 @@ function renderUI(){
   document.getElementById('weekdayAvgVal').textContent = fmtL(rnd(m.wkdyAvg));
   
   // Revenue Top KPIs
-  if(document.getElementById('revTotalAvg')) document.getElementById('revTotalAvg').textContent = 'â‚¹' + fmtN(rnd(m.dAvg));
-  if(document.getElementById('revWkdyAvg')) document.getElementById('revWkdyAvg').textContent = 'â‚¹' + fmtN(rnd(m.wkdyAvg));
-  if(document.getElementById('revWkndAvg')) document.getElementById('revWkndAvg').textContent = 'â‚¹' + fmtN(rnd(m.wkndAvg));
-  if(document.getElementById('revDailyTgt')) document.getElementById('revDailyTgt').textContent = 'â‚¹' + fmtN(rnd(m.dtgt));
+  if(document.getElementById('revTotalAvg')) document.getElementById('revTotalAvg').textContent = '₹' + fmtN(rnd(m.dAvg));
+  if(document.getElementById('revWkdyAvg')) document.getElementById('revWkdyAvg').textContent = '₹' + fmtN(rnd(m.wkdyAvg));
+  if(document.getElementById('revWkndAvg')) document.getElementById('revWkndAvg').textContent = '₹' + fmtN(rnd(m.wkndAvg));
+  if(document.getElementById('revDailyTgt')) document.getElementById('revDailyTgt').textContent = '₹' + fmtN(rnd(m.dtgt));
 
   // Calculate extra totals for the summary table
   var totGas = 0, totElec = 0;
@@ -1260,7 +1191,7 @@ function renderUI(){
     }
   });
 
-  // â”€â”€ Cost summary table â”€â”€
+  // ── Cost summary table ──
   var crows=[
     {h:'RM Indent',            a:m.tRM,    p:m.tRM/m.tRev*100,  b:TARGET*0.20},
     {h:'CP Indent',            a:m.tCP,    p:m.tCP/m.tRev*100,  b:TARGET*0.09},
@@ -1276,21 +1207,21 @@ function renderUI(){
   document.getElementById('costSummaryTbl').innerHTML = crows.map(function(r){
     var vari = r.b!=null ? r.a-r.b : null;
     var ok   = vari!=null ? vari<=0 : null;
-    var tag  = ok===true  ? '<span class="tag tag-g">âœ“ OK</span>'
-             : ok===false ? '<span class="tag tag-r">âš  Over</span>'
-             : '<span class="tag tag-m">â€”</span>';
-    var vaStr = vari!=null ? (ok?'-':'+')+'â‚¹'+fmtN(Math.abs(rnd(vari))) : 'â€”';
+    var tag  = ok===true  ? '<span class="tag tag-g">✓ OK</span>'
+             : ok===false ? '<span class="tag tag-r">⚠ Over</span>'
+             : '<span class="tag tag-m">—</span>';
+    var vaStr = vari!=null ? (ok?'-':'+')+'₹'+fmtN(Math.abs(rnd(vari))) : '—';
     return '<tr style="'+(r.bold?'background:#111827':'')+'">'
       +'<td style="font-weight:'+(r.bold?700:500)+';color:'+(r.bold?'#f1f5f9':'#94a3b8')+'">'+r.h+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#f1f5f9">â‚¹'+fmtN(rnd(r.a))+'</td>'
+      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#f1f5f9">₹'+fmtN(rnd(r.a))+'</td>'
       +'<td class="num" style="color:'+(r.p>30&&r.bold?'#ef4444':'#94a3b8')+'">'+r.p.toFixed(1)+'%</td>'
-      +'<td class="num" style="color:#64748b;font-family:\'DM Mono\',monospace">'+(r.b?'â‚¹'+fmtN(r.b):'â€”')+'</td>'
+      +'<td class="num" style="color:#64748b;font-family:\'DM Mono\',monospace">'+(r.b?'₹'+fmtN(r.b):'—')+'</td>'
       +'<td class="num" style="color:'+(ok?'#22c55e':ok===false?'#ef4444':'#64748b')+';font-family:\'DM Mono\',monospace">'+vaStr+'</td>'
       +'<td class="num">'+tag+'</td>'
     +'</tr>';
   }).join('');
 
-  // â”€â”€ Daily log â”€â”€
+  // ── Daily log ──
   var dKeys = Object.keys(window.DYNAMIC_DATA || {});
   
   // Build header
@@ -1305,7 +1236,7 @@ function renderUI(){
   var costsCont = document.getElementById('dynamicCostsContainer');
   if(costsCont && m.top5Costs) {
     var costsHtml = m.top5Costs.map(function(c, i) {
-      var fmt = function(v){ return c.isAmt ? 'â‚¹'+fmtN(rnd(v)) : fmtN(v,1); };
+      var fmt = function(v){ return c.isAmt ? '₹'+fmtN(rnd(v)) : fmtN(v,1); };
       var pctRev = m.tRev ? ((c.t / m.tRev)*100).toFixed(1) : '0';
       return '<div class="card card-body" style="margin-bottom:16px">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
@@ -1319,7 +1250,7 @@ function renderUI(){
           + '<div style="background:var(--b1);padding:10px 14px;border-radius:10px;border:1px solid var(--b2)"><div style="font-size:9px;color:var(--m1);text-transform:uppercase;letter-spacing:0.6px;margin-bottom:4px">Weekend Avg</div><div style="font-size:17px;font-weight:800;color:var(--blu);font-family:\'DM Mono\',monospace">'+fmt(c.wkndAvg)+'</div></div>'
         + '</div>'
         + '<div class="chart-wrap">'
-        + '<button class="exp-btn" onclick="expandChart(\'chCost'+i+'\', \''+c.name+' Analysis\')">â›¶</button>'
+        + '<button class="exp-btn" onclick="expandChart(\'chCost'+i+'\', \''+c.name+' Analysis\')">⛶</button>'
         + '<div style="position:relative;height:220px"><canvas id="chartTopCost'+i+'"></canvas></div>'
         + '</div>'
         + '</div>';
@@ -1332,19 +1263,19 @@ function renderUI(){
     var ip=m.ipc[i], ok=REV[i]>=m.dtgt;
     var rowHtml = '<tr>'
       +'<td style="color:#f59e0b;font-weight:600">'+d+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:'+(ok?'#22c55e':'#ef4444')+';font-weight:700">â‚¹'+fmtN(REV[i])+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">â‚¹'+fmtN(RM[i])+' <span style="font-size:9px;color:#64748b">('+(REV[i]?((RM[i]/REV[i])*100).toFixed(1):0)+'%)</span></td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">â‚¹'+fmtN(CP[i])+' <span style="font-size:9px;color:#64748b">('+(REV[i]?((CP[i]/REV[i])*100).toFixed(1):0)+'%)</span></td>'
+      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:'+(ok?'#22c55e':'#ef4444')+';font-weight:700">₹'+fmtN(REV[i])+'</td>'
+      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(RM[i])+' <span style="font-size:9px;color:#64748b">('+(REV[i]?((RM[i]/REV[i])*100).toFixed(1):0)+'%)</span></td>'
+      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(CP[i])+' <span style="font-size:9px;color:#64748b">('+(REV[i]?((CP[i]/REV[i])*100).toFixed(1):0)+'%)</span></td>'
       +'<td class="num" style="color:'+(ip<=29?'#22c55e':'#ef4444')+';font-weight:700">'+ip+'%</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">â‚¹'+fmtN(PKG[i])+' <span style="font-size:9px;color:#64748b">('+(REV[i]?((PKG[i]/REV[i])*100).toFixed(1):0)+'%)</span></td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">â‚¹'+fmtN(HK[i])+' <span style="font-size:9px;color:#64748b">('+(REV[i]?((HK[i]/REV[i])*100).toFixed(1):0)+'%)</span></td>';
+      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(PKG[i])+' <span style="font-size:9px;color:#64748b">('+(REV[i]?((PKG[i]/REV[i])*100).toFixed(1):0)+'%)</span></td>'
+      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(HK[i])+' <span style="font-size:9px;color:#64748b">('+(REV[i]?((HK[i]/REV[i])*100).toFixed(1):0)+'%)</span></td>';
     
     dKeys.forEach(function(k){
       var v = window.DYNAMIC_DATA[k][i] || 0;
       var isAmt = String(k).toLowerCase().indexOf('value')!==-1 || String(k).toLowerCase().indexOf('amount')!==-1 || String(k).toLowerCase().indexOf('cost')!==-1 || String(k).toLowerCase().indexOf('expenses')!==-1 || v>1000;
       var pct = REV[i] ? ((v/REV[i])*100).toFixed(1) : 0;
       rowHtml += '<td class="num" style="font-family:\'DM Mono\',monospace">' 
-               + (isAmt?'â‚¹':'') + fmtN(v) 
+               + (isAmt?'₹':'') + fmtN(v) 
                + (isAmt?' <span style="font-size:9px;color:#64748b">('+pct+'%)</span>':'') 
                + '</td>';
     });
@@ -1354,103 +1285,48 @@ function renderUI(){
 
   // Build foot
   var footHtml = '<td>MTD TOTAL</td>'
-    +'<td class="num">â‚¹'+fmtN(m.tRev)+'</td>'
-    +'<td class="num">â‚¹'+fmtN(m.tRM)+' <span style="font-size:9px;color:#64748b">('+(m.tRev?((m.tRM/m.tRev)*100).toFixed(1):0)+'%)</span></td>'
-    +'<td class="num">â‚¹'+fmtN(m.tCP)+' <span style="font-size:9px;color:#64748b">('+(m.tRev?((m.tCP/m.tRev)*100).toFixed(1):0)+'%)</span></td>'
+    +'<td class="num">₹'+fmtN(m.tRev)+'</td>'
+    +'<td class="num">₹'+fmtN(m.tRM)+' <span style="font-size:9px;color:#64748b">('+(m.tRev?((m.tRM/m.tRev)*100).toFixed(1):0)+'%)</span></td>'
+    +'<td class="num">₹'+fmtN(m.tCP)+' <span style="font-size:9px;color:#64748b">('+(m.tRev?((m.tCP/m.tRev)*100).toFixed(1):0)+'%)</span></td>'
     +'<td class="num" style="color:'+m.indCol+'">'+m.ipcMTD.toFixed(1)+'%</td>'
-    +'<td class="num">â‚¹'+fmtN(m.tPkg)+' <span style="font-size:9px;color:#64748b">('+(m.tRev?((m.tPkg/m.tRev)*100).toFixed(1):0)+'%)</span></td>'
-    +'<td class="num">â‚¹'+fmtN(m.tHK)+' <span style="font-size:9px;color:#64748b">('+(m.tRev?((m.tHK/m.tRev)*100).toFixed(1):0)+'%)</span></td>';
+    +'<td class="num">₹'+fmtN(m.tPkg)+' <span style="font-size:9px;color:#64748b">('+(m.tRev?((m.tPkg/m.tRev)*100).toFixed(1):0)+'%)</span></td>'
+    +'<td class="num">₹'+fmtN(m.tHK)+' <span style="font-size:9px;color:#64748b">('+(m.tRev?((m.tHK/m.tRev)*100).toFixed(1):0)+'%)</span></td>';
     
   dKeys.forEach(function(k){
     var tot = sum(window.DYNAMIC_DATA[k]);
     var isAmt = String(k).toLowerCase().indexOf('value')!==-1 || String(k).toLowerCase().indexOf('amount')!==-1 || String(k).toLowerCase().indexOf('cost')!==-1 || String(k).toLowerCase().indexOf('expenses')!==-1 || tot>1000;
     var pct = m.tRev ? ((tot/m.tRev)*100).toFixed(1) : 0;
-    footHtml += '<td class="num" style="font-family:\'DM Mono\',monospace;color:#facc15">' + (isAmt?'â‚¹':'') + fmtN(tot) + (isAmt?' <span style="font-size:9px;color:#64748b">('+pct+'%)</span>':'') + '</td>';
+    footHtml += '<td class="num" style="font-family:\'DM Mono\',monospace;color:#facc15">' + (isAmt?'₹':'') + fmtN(tot) + (isAmt?' <span style="font-size:9px;color:#64748b">('+pct+'%)</span>':'') + '</td>';
   });
   
   document.getElementById('dailyLogFoot').innerHTML = footHtml;
 }
 
-function exportDailyLogCSV() {
-  var rows = [[]];
-  // Headers
-  var headers = ['Date','Revenue','RM','CP','Indent %','Packaging','HK'];
-  var dKeys = Object.keys(window.DYNAMIC_DATA || {});
-  dKeys.forEach(function(k){ headers.push(k); });
-  rows[0] = headers;
-
-  // Data rows
-  var n = DATES.length;
-  var m = calcMetrics();
-  for(var i=0; i<n; i++) {
-    var row = [
-      DATES[i],
-      REV[i],
-      RM[i],
-      CP[i],
-      m.ipc[i] + '%',
-      PKG[i],
-      HK[i]
-    ];
-    dKeys.forEach(function(k){ row.push(window.DYNAMIC_DATA[k][i] || 0); });
-    rows.push(row);
-  }
-
-  // Footer
-  var foot = [
-    'MTD TOTAL',
-    m.tRev,
-    m.tRM,
-    m.tCP,
-    m.ipcMTD.toFixed(1) + '%',
-    m.tPkg,
-    m.tHK
-  ];
-  dKeys.forEach(function(k){ foot.push(sum(window.DYNAMIC_DATA[k])); });
-  rows.push(foot);
-
-  var csv = rows.map(function(r){ return r.join(','); }).join('\n');
-  var blob = new Blob([csv], { type: 'text/csv' });
-  var url = window.URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.setAttribute('hidden', '');
-  a.setAttribute('href', url);
-  a.setAttribute('download', 'daily_mis_log_' + (new Date().toISOString().split('T')[0]) + '.csv');
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  showToast('âœ… CSV Exported successfully!');
-}
-
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 5. CHARTS
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 var CI = {};
 var builtPages = {};
-Chart.defaults.color = '#cbd5e1';
+Chart.defaults.color = '#64748b';
 Chart.defaults.font.family = "'DM Sans', sans-serif";
-Chart.defaults.font.size = 11;
-var GC = 'rgba(255,255,255,0.1)';
-var TT = {backgroundColor:'#0f172a',borderColor:'#1e293b',borderWidth:1,titleColor:'#f1f5f9',bodyColor:'#f8fafc',padding:12,cornerRadius:10};
+Chart.defaults.font.size = 10;
+var GC = 'rgba(26,34,53,0.7)';
+var TT = {backgroundColor:'#0d1117',borderColor:'#1a2235',borderWidth:1,titleColor:'#94a3b8',bodyColor:'#e2e8f0',padding:10,cornerRadius:8};
 
 if(typeof ChartDataLabels !== 'undefined'){
   Chart.register(ChartDataLabels);
   Chart.defaults.plugins.datalabels = {
-    color: '#ffffff',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    borderRadius: 4,
-    padding: 3,
-    font: { size: 10, weight: '700', family: "'DM Mono', monospace" },
+    color: '#94a3b8',
+    font: { size: 9, family: "'DM Mono', monospace" },
     formatter: function(value) {
-      if(!value || value < 100) return ''; // Hide very small values for clarity
-      if(value >= 1000) return 'â‚¹' + new Intl.NumberFormat('en-IN', {notation: "compact", compactDisplay: "short"}).format(value);
+      if(!value) return '';
+      if(value > 1000) return '₹' + new Intl.NumberFormat('en-IN', {notation: "compact", compactDisplay: "short"}).format(value);
       return value%1 !== 0 ? value.toFixed(1) : value;
     },
     anchor: 'end',
     align: 'top',
     offset: 2,
-    display: true,
-    clip: false
+    display: 'auto'
   };
 }
 
@@ -1476,8 +1352,8 @@ function buildPageCharts(page){
         backgroundColor:REV.map(function(v){ return v>=m.dtgt?'rgba(34,197,94,.75)':'rgba(245,158,11,.75)'; })
       }]},
       options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return 'â‚¹'+fmtN(c.raw);}}}},
-        scales:{x:{grid:{color:GC},ticks:{maxTicksLimit:9}},y:{grid:{color:GC},grace:'15%',ticks:{callback:function(v){return (v/100000).toFixed(0)+'L';}}}}}
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return '₹'+fmtN(c.raw);}}}},
+        scales:{x:{grid:{color:GC},ticks:{maxTicksLimit:9}},y:{grid:{color:GC},ticks:{callback:function(v){return (v/100000).toFixed(0)+'L';}}}}}
     });
   }
 
@@ -1493,8 +1369,8 @@ function buildPageCharts(page){
           borderDash:[4,4], borderWidth:1.5, pointRadius:0, label:'Target'},
       ]},
       options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return c.dataset.label+': â‚¹'+fmtN(c.raw);}}}},
-        scales:{x:{grid:{color:GC},ticks:{maxTicksLimit:10}},y:{grid:{color:GC},grace:'15%',ticks:{callback:function(v){return (v/100000).toFixed(0)+'L';}}}}}
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return c.dataset.label+': ₹'+fmtN(c.raw);}}}},
+        scales:{x:{grid:{color:GC},ticks:{maxTicksLimit:10}},y:{grid:{color:GC},ticks:{callback:function(v){return (v/100000).toFixed(0)+'L';}}}}}
     });
 
     var roll7 = DATES.slice(6).map(function(_,i){ return avg(REV.slice(i, i+7)); });
@@ -1505,8 +1381,8 @@ function buildPageCharts(page){
         fill:true, tension:.4, pointRadius:0, borderWidth:2
       }]},
       options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return 'â‚¹'+fmtN(Math.round(c.raw));}}}},
-        scales:{x:{grid:{color:GC},ticks:{maxTicksLimit:7}},y:{grid:{color:GC},grace:'10%',ticks:{callback:function(v){return (v/100000).toFixed(0)+'L';}}}}}
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return '₹'+fmtN(Math.round(c.raw));}}}},
+        scales:{x:{grid:{color:GC},ticks:{maxTicksLimit:7}},y:{grid:{color:GC},ticks:{callback:function(v){return (v/100000).toFixed(0)+'L';}}}}}
     });
 
     var cumul = REV.map(function(v,i){ return sum(REV.slice(0,i+1)); });
@@ -1518,8 +1394,8 @@ function buildPageCharts(page){
         {label:'Pace',   data:pace,  borderColor:'#ef4444', borderDash:[4,4], fill:false, tension:.3, pointRadius:0, borderWidth:1.5},
       ]},
       options:{responsive:true,maintainAspectRatio:false,
-        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return c.dataset.label+': â‚¹'+(c.raw/100000).toFixed(2)+'L';}}}},
-        scales:{x:{grid:{color:GC},ticks:{maxTicksLimit:7}},y:{grid:{color:GC},grace:'10%',ticks:{callback:function(v){return (v/100000).toFixed(0)+'L';}}}}}
+        plugins:{legend:{display:false},tooltip:{...TT,callbacks:{label:function(c){return c.dataset.label+': ₹'+(c.raw/100000).toFixed(2)+'L';}}}},
+        scales:{x:{grid:{color:GC},ticks:{maxTicksLimit:7}},y:{grid:{color:GC},ticks:{callback:function(v){return (v/100000).toFixed(0)+'L';}}}}}
     });
   }
 
@@ -1545,11 +1421,11 @@ function buildPageCharts(page){
           plugins: {
             legend: {display:false},
             tooltip: {backgroundColor:'#0d1117',borderColor:'#1a2235',borderWidth:1,titleColor:'#94a3b8',bodyColor:'#e2e8f0',padding:10,cornerRadius:8,
-              callbacks: {label: function(ctx){ return c.isAmt ? 'â‚¹'+fmtN(ctx.raw) : fmtN(ctx.raw,1); }}}
+              callbacks: {label: function(ctx){ return c.isAmt ? '₹'+fmtN(ctx.raw) : fmtN(ctx.raw,1); }}}
           },
           scales: {
-            x: {grid:{color:GC}, ticks:{maxTicksLimit:12, color:'#cbd5e1', font:{size:9}}},
-            y: {grid:{color:GC}, grace:'15%', ticks:{color:'#cbd5e1',
+            x: {grid:{color:GC}, ticks:{maxTicksLimit:12, color:'#64748b', font:{size:9}}},
+            y: {grid:{color:GC}, ticks:{color:'#64748b',
               callback: function(v) {
                 if(!c.isAmt) return fmtN(v,1);
                 return v>=100000 ? (v/100000).toFixed(1)+'L' : v>=1000 ? (v/1000).toFixed(0)+'k' : v;
@@ -1569,9 +1445,9 @@ function buildPageCharts(page){
   }
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 6. NAV & SUB-TAB
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 document.getElementById('navBar').addEventListener('click', function(e){
   var btn = e.target.closest('.nav-btn');
   if(!btn) return;
@@ -1599,9 +1475,9 @@ function pickMsg(btn){
   selMsgType = btn.dataset.type;
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 7. INTELLIGENCE & CHAT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 function buildCtx(){
   var ctx = 'GLOBAL CONTEXT - YOU HAVE ACCESS TO ALL THIS DATA:\n\n';
   
@@ -1611,7 +1487,7 @@ function buildCtx(){
       var d = SHEET_DATA[k];
       var rev = sum(d.REV), rm = sum(d.RM), cp = sum(d.CP);
       var margin = rev ? ((rev - rm - cp)/rev)*100 : 0;
-      ctx += 'Month ['+d.tabName+']: Rev â‚¹'+fmtN(rev)+' | Indent '+(rm+cp)+' ('+margin.toFixed(1)+'%) | Target â‚¹'+fmtN(d.TARGET)+'\n';
+      ctx += 'Month ['+d.tabName+']: Rev ₹'+fmtN(rev)+' | Indent '+(rm+cp)+' ('+margin.toFixed(1)+'%) | Target ₹'+fmtN(d.TARGET)+'\n';
     });
   }
   
@@ -1619,12 +1495,12 @@ function buildCtx(){
   var m = calcMetrics();
   var monthName = window.activeSheetId ? window.activeSheetId.split('__')[1] : 'Selected';
   ctx += '\nACTIVE MONTH DETAILED ('+monthName+'):\n'
-    +'- MTD Revenue: â‚¹'+fmtN(m.tRev)+' | Target: â‚¹'+fmtN(TARGET)+' | Achieved: '+m.ach.toFixed(1)+'%\n'
-    +'- Daily Avg: â‚¹'+fmtN(rnd(m.dAvg))+' | Last 7d Avg: â‚¹'+fmtN(rnd(m.l7avg))+'\n'
-    +'- Proj Month-end: â‚¹'+fmtN(rnd(m.proj))+' | Gap: â‚¹'+fmtN(rnd(m.gap))+'\n'
-    +'- Indent (RM+CP): â‚¹'+fmtN(m.tInd)+' = '+m.ipcMTD.toFixed(1)+'% (target 29%)\n'
-    +'- Gas: â‚¹'+fmtN(m.tGasV)+' | Water: â‚¹'+fmtN(m.tWatV)+'\n'
-    +'- Weekend Avg: â‚¹'+fmtN(rnd(m.wkndAvg))+' | Weekday Avg: â‚¹'+fmtN(rnd(m.wkdyAvg))+'\n';
+    +'- MTD Revenue: ₹'+fmtN(m.tRev)+' | Target: ₹'+fmtN(TARGET)+' | Achieved: '+m.ach.toFixed(1)+'%\n'
+    +'- Daily Avg: ₹'+fmtN(rnd(m.dAvg))+' | Last 7d Avg: ₹'+fmtN(rnd(m.l7avg))+'\n'
+    +'- Proj Month-end: ₹'+fmtN(rnd(m.proj))+' | Gap: ₹'+fmtN(rnd(m.gap))+'\n'
+    +'- Indent (RM+CP): ₹'+fmtN(m.tInd)+' = '+m.ipcMTD.toFixed(1)+'% (target 29%)\n'
+    +'- Gas: ₹'+fmtN(m.tGasV)+' | Water: ₹'+fmtN(m.tWatV)+'\n'
+    +'- Weekend Avg: ₹'+fmtN(rnd(m.wkndAvg))+' | Weekday Avg: ₹'+fmtN(rnd(m.wkdyAvg))+'\n';
 
   // 3. MIS Data
   if(window.MIS_DATA && window.MIS_DATA.length) {
@@ -1642,7 +1518,7 @@ function buildCtx(){
   return ctx;
 }
 
-var SYS_PROMPT = 'You are an elite AI Operations Analyst for Babai Tiffins. You have full access to cross-month revenue, costs, MIS P&L, and Team data. Provide sharp, direct answers. Do not use the word AI. Use â‚¹ formatting.';
+var SYS_PROMPT = 'You are an elite AI Operations Analyst for Babai Tiffins. You have full access to cross-month revenue, costs, MIS P&L, and Team data. Provide sharp, direct answers. Do not use the word AI. Use ₹ formatting.';
 var chatHistory = [];
 
 function runIntel(mode){
@@ -1782,21 +1658,21 @@ function copyText(id){
   navigator.clipboard.writeText(txt).then(function(){ showToast('Copied to clipboard!'); });
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 8. API KEY MANAGEMENT
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 function openModal(id){ document.getElementById(id).classList.add('show'); }
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 function saveApiKey(){
   var k = document.getElementById('apiKeyInput').value.trim();
   if(!k.startsWith('gsk_')){
-    document.getElementById('apiKeyErr').textContent = 'âš  Invalid Groq Key (starts with gsk_).';
+    document.getElementById('apiKeyErr').textContent = '⚠ Invalid Groq Key (starts with gsk_).';
     return;
   }
   localStorage.setItem('sjp_api_key', k);
   closeModal('apiModal');
   refreshKeyBadge();
-  showToast('API Key saved âœ“');
+  showToast('API Key saved ✓');
 }
 function clearApiKey(){
   localStorage.removeItem('sjp_api_key');
@@ -1807,13 +1683,13 @@ function refreshKeyBadge(){
   var el = document.getElementById('keyStatusBadge');
   if(!el) return;
   var k = localStorage.getItem('sjp_api_key');
-  el.textContent = k ? 'Key saved âœ“' : 'Not set';
+  el.textContent = k ? 'Key saved ✓' : 'Not set';
   el.style.color  = k ? '#22c55e'  : '#ef4444';
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 9. GOOGLE SHEET SYNC
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 var PUB_ID = '2PACX-1vQrB-39HO8FaR4J6ROj9sCr1Z-z4ITY7yti7kh-ZIsINEnVPNLze3Lk399v8xfizQ6CmdFYrOgpIUaO';
 var pendingRows = [];
 
@@ -1866,7 +1742,7 @@ function parseCSV(text){
 }
 
 async function fetchSheetRows(csvUrl, pubId, gid){
-  // Method 1: gviz JSONP â€” bypasses CORS on local file://
+  // Method 1: gviz JSONP — bypasses CORS on local file://
   try{
     var rows = await fetchViaGviz(pubId, gid||0);
     if(rows && rows.length>1) return rows;
@@ -1905,14 +1781,14 @@ async function doSync(){
   var btn = document.getElementById('syncBtn');
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner"></div> Connecting...';
-  setMsg('syncMsg','ðŸ”„ Fetching live data from Apps Script...','#94a3b8');
+  setMsg('syncMsg','🔄 Fetching live data from Apps Script...','#94a3b8');
 
   // Detect if URL is an Apps Script exec URL or a published CSV
   var isAppsScript = url.indexOf('/macros/s/') !== -1;
 
   try{
     if(isAppsScript){
-      // â”€â”€ Apps Script JSON API path â”€â”€
+      // ── Apps Script JSON API path ──
       var fetchUrl = url + (url.indexOf('?') !== -1 ? '&' : '?') + '_t=' + Date.now();
       var r = await fetch(fetchUrl, { cache: 'no-store' });
       var json = await r.json();
@@ -1967,17 +1843,8 @@ async function doSync(){
       inject(PKG,npk); inject(HK,nhk); inject(GASU,ngu); inject(GASV,ngv);
       inject(WATQ,nwq); inject(WATV,nwv); inject(PETTY,npt);
 
-      // Populate globals for MTD table
-      window.TARGETS = {}; window.RUN_RATES = {}; window.MTDS = {};
-      data.forEach(function(row){
-        var p = row.Particulars; if(!p) return;
-        window.TARGETS[p] = parseFloat(row['Target']) || 0;
-        window.RUN_RATES[p] = parseFloat(row['Run Rate']) || 0;
-        window.MTDS[p] = parseFloat(row['MTD']) || 0;
-      });
-
     } else {
-      // â”€â”€ Legacy CSV / gviz path â”€â”€
+      // ── Legacy CSV / gviz path ──
       var pubId = PUB_ID, gid = 0;
       var pm = url.match(/\/e\/([^\/]+)/); if(pm) pubId = pm[1];
       var gm = url.match(/gid=(\d+)/);    if(gm) gid = parseInt(gm[1]);
@@ -1986,10 +1853,10 @@ async function doSync(){
       pendingRows = rows;
       showPreviewTable(rows);
       localStorage.setItem('sjp_sheet_url', url);
-      setMsg('syncMsg','âœ… '+rows.length+' rows loaded! Check preview below, then tap Apply to Dashboard.','#22c55e');
+      setMsg('syncMsg','✅ '+rows.length+' rows loaded! Check preview below, then tap Apply to Dashboard.','#22c55e');
       var b2=document.getElementById('connectedBanner');
       b2.style.display='flex';
-      document.getElementById('connectedSub').textContent = rows.length+' rows Â· '+new Date().toLocaleTimeString('en-IN');
+      document.getElementById('connectedSub').textContent = rows.length+' rows · '+new Date().toLocaleTimeString('en-IN');
       btn.disabled = false;
       btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Sync Now';
       return;
@@ -2002,12 +1869,12 @@ async function doSync(){
     setTimeout(function(){ buildPageCharts('overview'); }, 80);
 
     localStorage.setItem('sjp_sheet_url', url);
-    document.getElementById('srcInfoEl').textContent = 'Live: '+DATES.length+' days Â· synced '+new Date().toLocaleTimeString('en-IN');
-    setMsg('syncMsg','âœ… '+DATES.length+' days loaded and applied!','#22c55e');
-    showToast('âœ… Dashboard updated â€” '+DATES.length+' days!');
+    document.getElementById('srcInfoEl').textContent = 'Live: '+DATES.length+' days · synced '+new Date().toLocaleTimeString('en-IN');
+    setMsg('syncMsg','✅ '+DATES.length+' days loaded and applied!','#22c55e');
+    showToast('✅ Dashboard updated — '+DATES.length+' days!');
     var b=document.getElementById('connectedBanner');
     b.style.display='flex';
-    document.getElementById('connectedSub').textContent = DATES.length+' days Â· '+new Date().toLocaleTimeString('en-IN');
+    document.getElementById('connectedSub').textContent = DATES.length+' days · '+new Date().toLocaleTimeString('en-IN');
 
     // Navigate to overview
     document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
@@ -2016,7 +1883,7 @@ async function doSync(){
     document.getElementById('page-overview').classList.add('active');
 
   } catch(e){
-    setMsg('syncMsg','âŒ '+e.message,'#ef4444');
+    setMsg('syncMsg','❌ '+e.message,'#ef4444');
   }
   btn.disabled = false;
   btn.innerHTML = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg> Sync Now';
@@ -2029,9 +1896,9 @@ function disconnect(){
   showToast('Sheet disconnected.');
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 10. FILE UPLOAD
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 function handleDrop(e){
   e.preventDefault();
   document.getElementById('dropZoneEl').classList.remove('over');
@@ -2042,10 +1909,10 @@ function handleDrop(e){
 function handleFile(file){
   if(!file) return;
   if(!file.name.endsWith('.csv')){
-    setMsg('uploadMsg','âŒ Please upload a .csv file. In Google Sheets: File â†’ Download â†’ CSV.','#ef4444');
+    setMsg('uploadMsg','❌ Please upload a .csv file. In Google Sheets: File → Download → CSV.','#ef4444');
     return;
   }
-  setMsg('uploadMsg','ðŸ“‚ Reading '+file.name+'...','#94a3b8');
+  setMsg('uploadMsg','📂 Reading '+file.name+'...','#94a3b8');
   var reader = new FileReader();
   reader.onload = function(e){
     try{
@@ -2053,19 +1920,19 @@ function handleFile(file){
       if(rows.length<2) throw new Error('File appears empty.');
       pendingRows = rows;
       showPreviewTable(rows);
-      setMsg('uploadMsg','âœ… '+rows.length+' rows loaded from '+file.name,'#22c55e');
+      setMsg('uploadMsg','✅ '+rows.length+' rows loaded from '+file.name,'#22c55e');
       var dz = document.getElementById('dropZoneEl');
-      dz.innerHTML = '<div style="font-size:22px">âœ…</div><div style="font-size:13px;font-weight:600;color:#22c55e;margin-top:5px">'+file.name+'</div><div style="font-size:10px;color:#64748b;margin-top:3px">'+rows.length+' rows</div>';
+      dz.innerHTML = '<div style="font-size:22px">✅</div><div style="font-size:13px;font-weight:600;color:#22c55e;margin-top:5px">'+file.name+'</div><div style="font-size:10px;color:#64748b;margin-top:3px">'+rows.length+' rows</div>';
     } catch(err){
-      setMsg('uploadMsg','âŒ '+err.message,'#ef4444');
+      setMsg('uploadMsg','❌ '+err.message,'#ef4444');
     }
   };
   reader.readAsText(file);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 11. PREVIEW & APPLY
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 function showPreviewTable(rows){
   var sec = document.getElementById('previewSection');
   var tbl = document.getElementById('previewTable');
@@ -2118,7 +1985,7 @@ function toNum(v){
 function applyToBoard(){
   if(!pendingRows.length){ showToast('No data loaded yet.'); return; }
   var c = detectCols(pendingRows);
-  if(c.rc < 0){ showToast('âš  Cannot find Revenue column. Check headers include "Revenue" or "Sales".'); return; }
+  if(c.rc < 0){ showToast('⚠ Cannot find Revenue column. Check headers include "Revenue" or "Sales".'); return; }
 
   var nd=[],nr=[],nrm=[],ncp=[],npk=[],nhk=[],ngu=[],ngv=[],nwq=[],nwv=[],npt=[];
   for(var i=c.hi+1; i<pendingRows.length; i++){
@@ -2139,7 +2006,7 @@ function applyToBoard(){
     npt.push(c.ptc>=0 ? toNum(row[c.ptc]) : 0);
   }
 
-  if(!nr.length){ showToast('âš  No valid data rows found after header.'); return; }
+  if(!nr.length){ showToast('⚠ No valid data rows found after header.'); return; }
 
   // Inject into global arrays
   function inject(arr, vals){ arr.length=0; vals.forEach(function(v){ arr.push(v); }); }
@@ -2156,9 +2023,9 @@ function applyToBoard(){
   setTimeout(function(){ buildPageCharts('overview'); }, 80);
 
   // Update source label
-  document.getElementById('srcInfoEl').textContent = 'Live data: '+nr.length+' days applied Â· '+new Date().toLocaleDateString('en-IN');
+  document.getElementById('srcInfoEl').textContent = 'Live data: '+nr.length+' days applied · '+new Date().toLocaleDateString('en-IN');
 
-  showToast('âœ… Dashboard updated â€” '+nr.length+' days applied!');
+  showToast('✅ Dashboard updated — '+nr.length+' days applied!');
 
   // Navigate to overview
   document.querySelectorAll('.nav-btn').forEach(function(b){ b.classList.remove('active'); });
@@ -2168,9 +2035,9 @@ function applyToBoard(){
   setTimeout(function(){ buildPageCharts('overview'); }, 80);
 }
 
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 // 12. UTILITIES
-// â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+// ═══════════════════════════════════════════════
 function setMsg(id, msg, color){
   var el = document.getElementById(id);
   if(!el) return;
@@ -2182,7 +2049,6 @@ function showToast(msg){
   var el = document.getElementById('toastEl');
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(function(){ el.classList.remove('show'); }, 3000);
 }
 
 </script>
@@ -2191,7 +2057,7 @@ function showToast(msg){
 <div class="fs-overlay" id="fsOverlay">
   <div class="fs-head">
     <div style="font-size:18px;font-weight:800;color:var(--txt)" id="fsTitle">Chart Analysis</div>
-    <button class="fs-close" onclick="closeFS()">âœ• Close</button>
+    <button class="fs-close" onclick="closeFS()">✕ Close</button>
   </div>
   <div style="flex:1;position:relative">
     <canvas id="fsCanvas"></canvas>
@@ -2322,7 +2188,6 @@ function switchAnTab(tab){
 
 
 </script>
-<script src="app.js?v=1.1.8"></script>
+<script src="app.js?v=1.0.6"></script>
 </body>
 </html>
-
