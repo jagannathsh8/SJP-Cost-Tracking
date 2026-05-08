@@ -234,7 +234,7 @@ function renderUI() {
   // Header Day Counter
   var dr = document.getElementById('hdrDays');
   if(dr && window.MONTH_DAYS) {
-    var day = REV.filter(v=>v>0).length;
+    var day = REV.filter(function(v){return v>0}).length;
     dr.textContent = 'Day '+day+' of '+window.MONTH_DAYS+' \u00b7 '+(window.MONTH_DAYS-day)+' days left';
   }
 
@@ -259,39 +259,76 @@ function buildPageCharts(page) {
 function renderOverview() {
   var m = calcMetrics();
   
-  // 1. Particulars Table
-  var tbl = document.getElementById('overviewMtdTbl');
-  if(tbl) {
-    var rows = [
-      {p:'Net Revenue', t:m.totTgt, r:m.totRev, s:m.totRev},
-      {p:'Total Costs', t:m.totTgt*0.7, r:m.totCost, s:m.totCost},
-      {p:'Net Margin',  t:m.totTgt*0.3, r:m.totNOI, s:m.totNOI}
-    ];
-    tbl.innerHTML = rows.map(function(r){
-      return '<tr><td>'+r.p+'</td>'
-        +'<td class="num">\u20b9'+fmtN(r.t)+'</td>'
-        +'<td class="num">\u20b9'+fmtN(r.r)+'</td>'
-        +'<td class="num">\u20b9'+fmtN(r.s)+'</td>'
-        +'<td class="num">'+(m.totRev>0?(r.r/m.totRev*100).toFixed(1):'0')+'%</td></tr>';
+  // 1. Top KPI Grid
+  var kpiEl = document.getElementById('kpiGrid');
+  if(kpiEl) {
+    var todayIdx = REV.findLastIndex(function(v){return v > 0});
+    var todayVal = todayIdx !== -1 ? REV[todayIdx] : 0;
+    var ach = m.totTgt > 0 ? (m.totRev/m.totTgt*100) : 0;
+    
+    kpiEl.innerHTML = [
+      {l:'DAILY REVENUE', v:'\u20b9'+fmtN(todayVal), s:DATES[todayIdx]||'No data', c:'var(--txt)'},
+      {l:'MTD REVENUE',   v:'\u20b9'+fmtN(sum(REV)), s:'Actuals to date', c:'var(--blu)'},
+      {l:'MTD TARGET',    v:'\u20b9'+fmtN(m.totTgt), s:ach.toFixed(1)+'% Achieved', c:'var(--red)'},
+      {l:'SHEET RUN RATE',v:'\u20b9'+fmtN(m.totRev), s:'Official Projection', c:'var(--amb)'}
+    ].map(function(k){
+      return '<div class="kpi-card">'
+        +'<div class="kpi-lbl">'+k.l+'</div>'
+        +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
+        +'<div class="kpi-sub">'+k.s+'</div></div>';
     }).join('');
   }
 
-  // 2. Top/Bottom Days
-  var dayObjs = DATES.map(function(d,i){ return {d:d, v:REV[i]}; }).filter(x=>x.v>0);
-  var sorted = dayObjs.slice().sort((a,b)=>b.v-a.v);
-  
+  // 2. Particulars Table
+  var tbl = document.getElementById('overviewMtdTbl');
+  if(tbl) {
+    var curCost = sum(RM)+sum(CP)+sum(PKG)+sum(GASV)+sum(WATV)+sum(PETTY);
+    var rows = [
+      {p:'Net Revenue', t:m.totTgt, r:m.totRev, a:sum(REV)},
+      {p:'Total Costs', t:m.totTgt*0.7, r:m.totCost, a:curCost},
+      {p:'Net Margin',  t:m.totTgt*0.3, r:m.totNOI, a:sum(REV)-curCost}
+    ];
+    tbl.innerHTML = rows.map(function(r){
+      return '<tr><td style="font-weight:700;color:var(--txt)">'+r.p+'</td>'
+        +'<td class="num">\u20b9'+fmtN(r.t)+'</td>'
+        +'<td class="num">\u20b9'+fmtN(r.r)+'</td>'
+        +'<td class="num">\u20b9'+fmtN(r.a)+'</td>'
+        +'<td class="num" style="font-weight:700;color:var(--amb)">'+(m.totRev>0?(r.r/m.totRev*100).toFixed(1):'0')+'%</td></tr>';
+    }).join('');
+  }
+
+  // 3. Top/Bottom Days
+  var dayObjs = DATES.map(function(d,i){ return {d:d, v:REV[i]}; }).filter(function(x){return x.v>0;});
+  var sorted = dayObjs.slice().sort(function(a,b){return b.v-a.v;});
   var top3 = sorted.slice(0,3);
   var bot3 = sorted.slice(-3).reverse();
   
-  document.getElementById('top3Days').innerHTML = top3.map(x=>'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--m1)">'+x.d+'</span><span style="color:var(--grn);font-weight:700">\u20b9'+fmtN(x.v)+'</span></div>').join('');
-  document.getElementById('bot3Days').innerHTML = bot3.map(x=>'<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:var(--m1)">'+x.d+'</span><span style="color:var(--red);font-weight:700">\u20b9'+fmtN(x.v)+'</span></div>').join('');
+  document.getElementById('top3Days').innerHTML = top3.map(function(x){ return '<div class="day-row"><span>'+x.d+'</span><span style="color:var(--grn);font-weight:700">\u20b9'+fmtN(x.v)+'</span></div>'; }).join('');
+  document.getElementById('bot3Days').innerHTML = bot3.map(function(x){ return '<div class="day-row"><span>'+x.d+'</span><span style="color:var(--red);font-weight:700">\u20b9'+fmtN(x.v)+'</span></div>'; }).join('');
 
-  // 3. Weekday vs Weekend
-  var we=[], wd=[];
+  // 4. Cost Ratios
+  var ratiosEl = document.getElementById('costRatiosBars');
+  if(ratiosEl) {
+     var rSum = sum(REV)||1;
+     var items = [
+       {l:'RM/CP Indent', v:(sum(RM)+sum(CP))/rSum*100, t:32, c:'var(--blu)'},
+       {l:'Utilities (Gas/Water)', v:(sum(GASV)+sum(WATV))/rSum*100, t:5, c:'var(--pur)'},
+       {l:'Operating (Pkg/HK)', v:(sum(PKG)+sum(HK)+sum(PETTY))/rSum*100, t:3, c:'var(--cyn)'}
+     ];
+     ratiosEl.innerHTML = items.map(function(i){
+       return '<div class="ratio-row">'
+         +'<div class="ratio-meta"><span>'+i.l+'</span><span>'+i.v.toFixed(1)+'% / '+i.t+'%</span></div>'
+         +'<div class="ratio-track"><div class="ratio-fill" style="width:'+Math.min(i.v/i.t*100, 100)+'%;background:'+(i.v>i.t?'var(--red)':i.c)+'"></div></div>'
+         +'</div>';
+     }).join('');
+  }
+
   DATES.forEach(function(d,i){
     if(!REV[i]) return;
     if(d.indexOf('Sat')!==-1 || d.indexOf('Sun')!==-1) we.push(REV[i]); else wd.push(REV[i]);
   });
+  var we=[], wd=[];
+  DATES.forEach(function(d,i){ if(REV[i]>0){ if(d.indexOf('Sat')!==-1||d.indexOf('Sun')!==-1) we.push(REV[i]); else wd.push(REV[i]); } });
   document.getElementById('weekendAvgVal').textContent = '\u20b9' + fmtN(avg(we));
   document.getElementById('weekdayAvgVal').textContent = '\u20b9' + fmtN(avg(wd));
 }
