@@ -1,0 +1,15 @@
+Version: 1.1.8
+Release Date: 2026-05-08
+Status: Stable
+
+Files:
+- index.html (Main UI)
+- app.js (JavaScript Logic)
+- code.gs (Google Apps Script)
+- update.js (Update Handler)
+- manifest.json (PWA Manifest)
+
+Changes in v1.1.8:
+- Dashboard refinements
+- Performance optimizations
+- Enhanced data visualization
