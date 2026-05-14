@@ -239,6 +239,24 @@ tbody tr:last-child td{border-bottom:none}
     font-size: 11px !important;
   }
   .delta-pill { display: none; }
+  
+  /* Analysis Benchmark Mobile Fix */
+  #anBenchmarkGrid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+    margin-top: 15px !important;
+  }
+  #an-benchmark .card-body {
+    padding: 15px !important;
+  }
+  #chartAnBenchmarkCont {
+    height: 250px !important;
+  }
+  /* Grid Mobile Fix */
+  .grid2, .grid3 {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
 }
 
 /* ─ SHEET SELECTOR ─ */
@@ -642,8 +660,6 @@ tbody tr:last-child td{border-bottom:none}
       </div>
       <select id="teamOutletSlicer" class="inp" style="width:auto;font-size:11px;padding:4px 10px;height:auto" onchange="buildTeamCharts()">
         <option value="all">All Outlets</option>
-        <option value="varthur">Varthur</option>
-        <option value="sjp">SJP</option>
       </select>
       <select id="teamTimeSlicer" class="inp" style="width:auto;font-size:11px;padding:4px 10px;height:auto" onchange="toggleTeamRange(this.value)">
         <option value="all">All Time</option>
@@ -853,7 +869,7 @@ tbody tr:last-child td{border-bottom:none}
       <div id="anBenchmarkStatus" style="font-size:12px;color:var(--amb);padding:12px;background:rgba(245,158,11,0.05);border-radius:12px;margin-bottom:20px;display:none">
         Insights will appear as more historical data becomes available.
       </div>
-      <div style="height:350px"><canvas id="chartAnBenchmark"></canvas></div>
+      <div id="chartAnBenchmarkCont" style="height:350px"><canvas id="chartAnBenchmark"></canvas></div>
       <div id="anBenchmarkGrid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px"></div>
     </div>
   </div>
@@ -979,7 +995,7 @@ function calcMetrics(){
   var tWatV=sum(WATV), tWatQ=sum(WATQ), tPetty=sum(PETTY);
   var dLeft  = Math.max(MONTH_DAYS-n,0);
   var dAvg   = tRev/n;
-  var proj   = dAvg*MONTH_DAYS;
+  var proj   = (window.RUN_RATES && window.RUN_RATES['Net Revenue']) ? window.RUN_RATES['Net Revenue'] : dAvg*MONTH_DAYS;
   var gap    = TARGET-tRev;
   var rpd    = gap/dLeft;
   var ach    = (tRev/TARGET)*100;

@@ -4,7 +4,7 @@ var SHEET_COLORS = ['#f59e0b','#60a5fa','#22c55e','#a78bfa','#f87171','#38bdf8',
 var SHEET_DATA = {};
 var SHEET_REGISTRY = [];
 var activeSheetId = '';
-var DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxKEGzsKYdRMFxA1nWjVtifaPMxSzS7Pqqi-lL33UqlRlP--FI1oQK6eDiyvI1zPLVI/exec';
+var DEFAULT_API_URL = 'YOUR_APPS_SCRIPT_URL';
 
 function loadRegistry(){
   try { SHEET_REGISTRY = JSON.parse(localStorage.getItem('sjp_outlets')||'[]'); } catch(e){ SHEET_REGISTRY=[]; }
@@ -50,6 +50,9 @@ function switchActiveSheet(id){
   window.TARGET = d.TARGET;
   window.MONTH_DAYS = d.MONTH_DAYS;
   
+  var ts = document.getElementById('teamOutletSlicer');
+  if(ts) delete ts.dataset.dynamic;
+
   killAllCharts();
   Object.keys(builtPages).forEach(function(k){ delete builtPages[k]; });
   renderUI();
@@ -682,6 +685,26 @@ function buildTeamCharts() {
     var el = document.getElementById('teamKpiGrid');
     if(el) el.innerHTML = '<div style="padding:20px;color:var(--m1)">Sync "Employee onboarding data" tab to view insights.</div>';
     return;
+  }
+
+  // Dynamically populate outlet dropdown
+  var outletSlicer = document.getElementById('teamOutletSlicer');
+  if(outletSlicer && !outletSlicer.dataset.dynamic) {
+    var currentVal = outletSlicer.value;
+    var raw = window.TEAM_DATA;
+    var locs = new Set();
+    raw.forEach(function(r){
+      var loc = r['Location'] || r['Work Location'] || r['Store'];
+      if(loc) locs.add(String(loc).trim());
+    });
+    var sortedLocs = Array.from(locs).sort();
+    var html = '<option value="all">All Outlets</option>';
+    sortedLocs.forEach(function(l){
+      html += '<option value="'+l.toLowerCase()+'">'+l+'</option>';
+    });
+    outletSlicer.innerHTML = html;
+    outletSlicer.value = currentVal;
+    outletSlicer.dataset.dynamic = "true";
   }
   
   var raw = window.TEAM_DATA;
@@ -1327,7 +1350,7 @@ function buildAnOverview() {
   var daysElapsed = rev.filter(function(v){return v > 0}).length || 1;
   var monthDays = window.MONTH_DAYS || 30;
   var dAvg = totRev / daysElapsed;
-  var runRate = dAvg * monthDays;
+  var runRate = (window.RUN_RATES && window.RUN_RATES['Net Revenue']) ? window.RUN_RATES['Net Revenue'] : (dAvg * monthDays);
   document.getElementById('anKpiRunRate').innerText = '₹' + fmtN(runRate);
   document.getElementById('anKpiRunRateSub').innerText = 'Pace: ₹' + fmtN(dAvg) + ' / day';
   
@@ -1433,20 +1456,20 @@ function buildAnBenchmark() {
   var grid = document.getElementById('anBenchmarkGrid');
   if(grid) {
     grid.innerHTML = `
-      <div class="kpi-card">
-        <div class="kpi-lbl">TARGET INDEX</div>
-        <div class="kpi-val" style="color:var(--txt)">₹${fmtN(todayVal)}</div>
-        <div class="kpi-sub">Today's Actuals</div>
+      <div class="kpi-card" style="padding:12px 15px">
+        <div class="kpi-lbl" style="font-size:9px">TARGET INDEX</div>
+        <div class="kpi-val" style="color:var(--txt);font-size:20px">₹${fmtN(todayVal)}</div>
+        <div class="kpi-sub" style="font-size:10px">Today's Actuals</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-lbl">MARKET AVG</div>
-        <div class="kpi-val" style="color:var(--m1)">₹${fmtN(avg4)}</div>
-        <div class="kpi-sub">Last 4-week mean</div>
+      <div class="kpi-card" style="padding:12px 15px">
+        <div class="kpi-lbl" style="font-size:9px">MARKET AVG</div>
+        <div class="kpi-val" style="color:var(--m1);font-size:20px">₹${fmtN(avg4)}</div>
+        <div class="kpi-sub" style="font-size:10px">Last 4-week mean</div>
       </div>
-      <div class="kpi-card">
-        <div class="kpi-lbl">GROWTH DELTA</div>
-        <div class="kpi-val" style="color:${pct>=0?'var(--grn)':'var(--red)'}">${pct>=0?'+':''}${pct.toFixed(1)}%</div>
-        <div class="kpi-sub">${pct>=0?'Outperforming':'Underperforming'} avg</div>
+      <div class="kpi-card" style="padding:12px 15px">
+        <div class="kpi-lbl" style="font-size:9px">GROWTH DELTA</div>
+        <div class="kpi-val" style="color:${pct>=0?'var(--grn)':'var(--red)'};font-size:20px">${pct>=0?'+':''}${pct.toFixed(1)}%</div>
+        <div class="kpi-sub" style="font-size:10px">${pct>=0?'Outperforming':'Underperforming'}</div>
       </div>
     `;
   }
@@ -1459,22 +1482,24 @@ function buildAnBenchmark() {
       labels: ['Historical Benchmark', 'Current Performance'],
       datasets: [{
         data: [avg4, todayVal],
-        backgroundColor: ['rgba(255,255,255,0.05)', 'var(--amb)'],
+        backgroundColor: ['rgba(255,255,255,0.15)', 'var(--amb)'],
         borderRadius: 12, barThickness: 80
       }]
     },
     options: {
       responsive:true, maintainAspectRatio:false,
+      layout: { padding: { top: 35 } },
       plugins:{
         legend:{display:false},
         datalabels: {
-          color: '#fff', font: { weight: 'bold', size: 14 },
-          formatter: v => '₹' + fmtN(v), anchor: 'end', align: 'top'
+          color: '#fff', font: { weight: 'bold', size: 12 },
+          formatter: v => '₹' + fmtN(v), anchor: 'end', align: 'top',
+          offset: 5
         }
       },
       scales:{
-        y:{display:false}, 
-        x:{ticks:{color:'#f8fafc', font:{size:13, weight:'700'}}, grid:{display:false}}
+        y:{display:false, suggestedMax: Math.max(avg4, todayVal) * 1.2}, 
+        x:{ticks:{color:'#f8fafc', font:{size:12, weight:'700'}}, grid:{display:false}}
       }
     }
   });
