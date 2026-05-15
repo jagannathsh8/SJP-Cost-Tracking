@@ -101,19 +101,6 @@ td{padding:12px 12px;border-bottom:1px solid var(--b1);color:var(--m2);white-spa
 tbody tr:last-child td{border-bottom:none}
 .tfoot td{background:var(--s2)!important;border-top:2px solid var(--b2);font-weight:700;color:var(--txt);font-family:'DM Mono',monospace;font-size:11px}
 
-/* ─ STICKY ─ */
-#dailyLogHead th, #dailyLogTbl td, #dailyLogFoot td { position: static !important; } /* Reset all first */
-#dailyLogHead th { position: sticky !important; top: 0; z-index: 100; background: var(--s2); }
-#dailyLogHead th:first-child,
-#dailyLogTbl td:first-child,
-#dailyLogFoot td:first-child {
-  position: sticky !important;
-  left: 0;
-  z-index: 120;
-  background: #0d1117 !important;
-  border-right: 1px solid var(--b2);
-}
-#dailyLogHead th:first-child { z-index: 130; background: #111827 !important; }
 
 .tag{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:700}
 .tag-g{background:#14532d;color:#86efac}.tag-r{background:#450a0a;color:#fca5a5}.tag-a{background:#451a03;color:#fcd34d}.tag-m{background:var(--s2);color:var(--m1)}
@@ -240,22 +227,25 @@ tbody tr:last-child td{border-bottom:none}
   }
   .delta-pill { display: none; }
   
-  /* Analysis Benchmark Mobile Fix */
-  #anBenchmarkGrid {
+  /* Grid & KPI Mobile Fix */
+  .grid2, .grid3, .kpi-grid {
     grid-template-columns: 1fr !important;
-    gap: 8px !important;
-    margin-top: 15px !important;
+    gap: 10px !important;
   }
-  #an-benchmark .card-body {
-    padding: 15px !important;
+  .kpi-card {
+    padding: 12px 14px !important;
+    border-radius: 12px !important;
   }
-  #chartAnBenchmarkCont {
-    height: 250px !important;
+  .kpi-lbl {
+    margin-bottom: 4px !important;
+    font-size: 9px !important;
   }
-  /* Grid Mobile Fix */
-  .grid2, .grid3 {
-    grid-template-columns: 1fr !important;
-    gap: 12px !important;
+  .kpi-val {
+    font-size: 20px !important;
+  }
+  .kpi-sub {
+    margin-top: 4px !important;
+    font-size: 10px !important;
   }
 }
 
@@ -495,22 +485,30 @@ tbody tr:last-child td{border-bottom:none}
   <div class="card">
     <div class="card-body" style="padding-bottom:0"><div class="card-title">Day-by-Day MIS Log — SJP April 2026</div></div>
     <style>
-      .tbl-freeze { max-height: 65vh; overflow: auto; position: relative; }
-      .tbl-freeze table { border-collapse: separate; border-spacing: 0; min-width: 1000px; }
-      .tbl-freeze th { position: sticky; top: 0; z-index: 10; background: var(--bg); border-bottom: 2px solid var(--b2); box-shadow: 0 2px 0 var(--b2); }
-      .tbl-freeze tfoot td { position: sticky; bottom: 0; z-index: 10; background: var(--bg); border-top: 2px solid var(--b2); box-shadow: 0 -2px 0 var(--b2); }
+      .tbl-freeze { max-height: 70vh; overflow: auto; position: relative; border-radius: 12px; border: 1px solid var(--b1); background: var(--s1); }
+      .tbl-freeze table { border-collapse: separate; border-spacing: 0; min-width: 1200px; width: 100%; }
       
-      /* Freeze first 4 columns exactly */
-      .tbl-freeze th:nth-child(1), .tbl-freeze td:nth-child(1) { position: sticky; left: 0; z-index: 11; background: #0d1117; width: 100px; min-width: 100px; max-width: 100px; }
-      .tbl-freeze th:nth-child(2), .tbl-freeze td:nth-child(2) { position: sticky; left: 100px; z-index: 11; background: #0d1117; width: 120px; min-width: 120px; max-width: 120px; }
-      .tbl-freeze th:nth-child(3), .tbl-freeze td:nth-child(3) { position: sticky; left: 220px; z-index: 11; background: #0d1117; width: 150px; min-width: 150px; max-width: 150px; }
-      .tbl-freeze th:nth-child(4), .tbl-freeze td:nth-child(4) { position: sticky; left: 370px; z-index: 11; background: #0d1117; width: 150px; min-width: 150px; max-width: 150px; }
+      /* Header Row Freeze */
+      .tbl-freeze th { position: sticky; top: 0; z-index: 20; background: var(--s2); border-bottom: 2px solid var(--b2); color: var(--m1); font-size: 10px; font-weight: 800; text-transform: uppercase; padding: 12px; }
       
-      /* Header intersections need higher z-index */
-      .tbl-freeze th:nth-child(1), .tbl-freeze th:nth-child(2), .tbl-freeze th:nth-child(3), .tbl-freeze th:nth-child(4) { z-index: 12; background: var(--bg); }
-      .tbl-freeze tfoot td:nth-child(1), .tbl-freeze tfoot td:nth-child(2), .tbl-freeze tfoot td:nth-child(3), .tbl-freeze tfoot td:nth-child(4) { z-index: 12; background: var(--bg); }
+      /* First Column Freeze (Date) */
+      .tbl-freeze td:first-child, 
+      .tbl-freeze th:first-child { 
+        position: sticky; left: 0; z-index: 21; 
+        background: var(--s1); 
+        width: 110px; min-width: 110px; max-width: 110px;
+        border-right: 1px solid var(--b1);
+      }
       
-      .tbl-freeze td { border-bottom: 1px solid var(--b1); }
+      /* Corner Intersection (Top-Left) */
+      .tbl-freeze th:first-child { z-index: 25; background: var(--s2); }
+      
+      /* Footer Row (MTD Total) - Natural Scroll */
+      .tbl-freeze tfoot td { background: var(--s2); border-top: 2px solid var(--b2); font-weight: 800; color: var(--txt); }
+      .tbl-freeze tfoot td:first-child { background: var(--s2); z-index: 22; }
+
+      .tbl-freeze td { padding: 12px; border-bottom: 1px solid var(--b1); color: var(--m2); font-size: 12px; white-space: nowrap; }
+      .tbl-freeze tr:hover td { background: rgba(255,255,255,0.02); }
     </style>
     <div class="tbl-freeze" style="padding:0 0 16px">
       <table>
@@ -743,7 +741,7 @@ tbody tr:last-child td{border-bottom:none}
   <!-- TAB 1: P&L Data -->
   <div id="misTab-pl">
     <!-- KPI Strip -->
-    <div id="misKpiStrip" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+    <div id="misKpiStrip" class="kpi-grid" style="margin-bottom:16px"></div>
     <!-- Action Pointers -->
     <div id="misActionPointers"></div>
     <!-- P&L Table -->
