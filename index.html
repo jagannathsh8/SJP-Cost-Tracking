@@ -526,14 +526,20 @@ tbody tr:last-child td{border-bottom:none}
   <div style="font-size:11px;color:var(--m1);margin-bottom:18px">Store analysis, forecasting &amp; message drafting — SJP data powered</div>
 
   <div class="stab-bar">
-    <button class="stab-btn active" onclick="switchSubTab('analysis', this)">📊 Analysis</button>
+    <button class="stab-btn active" onclick="switchSubTab('insights', this)">⚡ Insights</button>
+    <button class="stab-btn" onclick="switchSubTab('analysis', this)">🧠 Deep Analysis</button>
     <button class="stab-btn" onclick="switchSubTab('forecast', this)">🔮 Forecast</button>
     <button class="stab-btn" onclick="switchSubTab('messages', this)">✉️ Messages</button>
     <button class="stab-btn" onclick="switchSubTab('chat', this)">💬 AI Chat</button>
   </div>
 
+  <!-- ⚡ INSTANT INSIGHTS — no API key needed -->
+  <div id="subtab-insights">
+    <div id="intelInsightsPanel"><div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">Sync data first to view insights.</div></div>
+  </div>
+
   <!-- Analysis -->
-  <div id="subtab-analysis">
+  <div id="subtab-analysis" style="display:none">
     <div class="card card-body" style="margin-bottom:12px">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-size:11px;color:var(--m1)">API Key: <span id="keyStatusBadge" style="font-weight:700">Checking...</span></div>
@@ -542,7 +548,7 @@ tbody tr:last-child td{border-bottom:none}
           <button class="btn btn-ghost" style="padding:5px 10px;font-size:10px;color:#f87171;border-color:#450a0a" onclick="clearApiKey()">Clear</button>
         </div>
       </div>
-      <div style="font-size:12px;color:var(--m2);line-height:1.75;margin-bottom:14px">Runs a comprehensive performance analysis on your SJP data — revenue health, cost efficiency, day-of-week patterns, and top action items for today.</div>
+      <div style="font-size:12px;color:var(--m2);line-height:1.75;margin-bottom:14px">AI-powered deep analysis — revenue health, cost efficiency, day-of-week patterns, anomaly detection &amp; top 5 action items with specific ₹ targets for today.</div>
       <button class="btn btn-primary" id="btnAnalysis" onclick="runIntel('analysis')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
         Run Deep Analysis
@@ -600,6 +606,14 @@ tbody tr:last-child td{border-bottom:none}
           <div class="msg-opt-t">🏪 Vendor Follow-up</div>
           <div class="msg-opt-s">Store manager follow-up</div>
         </button>
+        <button class="msg-opt" data-type="shift_report" onclick="pickMsg(this)">
+          <div class="msg-opt-t">🕐 Shift Handover</div>
+          <div class="msg-opt-s">End-of-shift ops note</div>
+        </button>
+        <button class="msg-opt" data-type="investor_update" onclick="pickMsg(this)">
+          <div class="msg-opt-t">💼 Investor Update</div>
+          <div class="msg-opt-s">Stakeholder performance brief</div>
+        </button>
       </div>
       <button class="btn btn-primary" id="btnMessage" onclick="runIntel('message')">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -623,15 +637,24 @@ tbody tr:last-child td{border-bottom:none}
 
   <!-- Chat -->
   <div id="subtab-chat" style="display:none">
-    <div class="card card-body" style="margin-bottom:12px; display:flex; flex-direction:column; height:500px; padding:0; overflow:hidden;">
-      <div style="background:var(--s2); padding:10px 15px; font-weight:800; border-bottom:1px solid var(--b1); font-size:13px; color:var(--txt);">
-        💬 Ask AI About Your Data
-        <div style="font-size:10px; color:var(--m1); font-weight:normal;">AI has access to all connected sheets, MIS, and Team data.</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">
+      <button class="btn btn-ghost" style="font-size:10px;padding:5px 9px" onclick="askSuggested('What is my projected month-end revenue?')">📈 Month-end projection</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:5px 9px" onclick="askSuggested('Which cost head is most over budget?')">🔥 Biggest cost overrun</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:5px 9px" onclick="askSuggested('What revenue per day is needed to hit target?')">🎯 Daily target needed</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:5px 9px" onclick="askSuggested('Compare this month vs last month performance')">📊 Month comparison</button>
+      <button class="btn btn-ghost" style="font-size:10px;padding:5px 9px" onclick="askSuggested('Top 3 action items for today')">✅ Today action items</button>
+    </div>
+    <div class="card card-body" style="margin-bottom:12px; display:flex; flex-direction:column; height:480px; padding:0; overflow:hidden;">
+      <div style="background:var(--s2); padding:10px 15px; font-weight:800; border-bottom:1px solid var(--b1); font-size:13px; color:var(--txt); display:flex;justify-content:space-between;align-items:center">
+        <div>💬 Ask AI About Your Data
+          <div style="font-size:10px; color:var(--m1); font-weight:normal;">AI has full access to all sheets, MIS &amp; Team data.</div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:10px;padding:4px 8px" onclick="clearChat()">🗑 Clear</button>
       </div>
       <div id="chatHistory" style="flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:12px;">
         <div style="align-self:flex-start; background:var(--s2); padding:10px 14px; border-radius:12px; border-bottom-left-radius:2px; font-size:13px; line-height:1.5; color:var(--txt); max-width:85%;">
-          Hello! I have access to all your dashboard data. Ask me anything, for example: <br>
-          <i>"Which month had the highest margin?"</i> or <i>"What are the top action pointers in MIS?"</i>
+          Hello! I have full access to your revenue, costs, MIS &amp; team data. Use the quick buttons above or ask me anything.<br><br>
+          <i>"Which day of week has best revenue?" or "What is my indent % trend?"</i>
         </div>
       </div>
       <div style="padding:10px; border-top:1px solid var(--b1); display:flex; gap:8px; background:var(--s1);">
@@ -1457,6 +1480,9 @@ function buildPageCharts(page){
   if(page === 'mis' && window.renderMIS) {
     renderMIS();
   }
+  if(page === 'intel') {
+    buildIntelInsights();
+  }
 }
 
 // ═══════════════════════════════════════════════
@@ -1474,12 +1500,13 @@ document.getElementById('navBar').addEventListener('click', function(e){
 });
 
 function switchSubTab(id, btn){
-  ['analysis','forecast','messages','chat'].forEach(function(s){
+  ['insights','analysis','forecast','messages','chat'].forEach(function(s){
     var el = document.getElementById('subtab-'+s);
-    if(el) el.style.display = s===id?'flex':'none';
+    if(el) el.style.display = s===id?'block':'none';
   });
-  document.querySelectorAll('.stab-btn').forEach(function(b){ b.classList.remove('active'); });
-  btn.classList.add('active');
+  document.querySelectorAll('#page-intel .stab-btn').forEach(function(b){ b.classList.remove('active'); });
+  if(btn) btn.classList.add('active');
+  if(id === 'insights') buildIntelInsights();
 }
 
 var selMsgType = 'daily_brief';
@@ -1492,6 +1519,124 @@ function pickMsg(btn){
 // ═══════════════════════════════════════════════
 // 7. INTELLIGENCE & CHAT
 // ═══════════════════════════════════════════════
+
+// ── Instant Insights (no API key needed) ──
+function buildIntelInsights(){
+  var el = document.getElementById('intelInsightsPanel');
+  if(!el) return;
+  if(!window.REV || !REV.length){
+    el.innerHTML = '<div class="card card-body" style="text-align:center;padding:40px;color:var(--m1)">Sync data first to view insights.</div>';
+    return;
+  }
+  var m = calcMetrics();
+  var tRev = sum(REV), tRM = sum(RM), tCP = sum(CP), tGasV = sum(GASV), tWatV = sum(WATV), tPkg = sum(PKG);
+  var tInd = tRM + tCP;
+  var ipc = tRev ? (tInd/tRev*100) : 0;
+  var gasP = tRev ? (tGasV/tRev*100) : 0;
+  var watP = tRev ? (tWatV/tRev*100) : 0;
+  var daysElapsed = REV.filter(function(v){return v>0;}).length || 1;
+  var dAvg = tRev / daysElapsed;
+  var monthDays = window.MONTH_DAYS || 30;
+  var dLeft = monthDays - daysElapsed;
+  var proj = dAvg * monthDays;
+  var tgt = window.TARGET || 0;
+  var gap = tgt - tRev;
+  var reqPerDay = dLeft > 0 ? Math.max(0, gap / dLeft) : 0;
+  var ach = tgt ? (tRev/tgt*100) : 0;
+
+  // Day-of-week analysis
+  var dowMap = {Mon:[],Tue:[],Wed:[],Thu:[],Fri:[],Sat:[],Sun:[]};
+  DATES.forEach(function(d,i){
+    var parts = d.split(' ');
+    var day = parts[0];
+    if(dowMap[day] !== undefined && REV[i] > 0) dowMap[day].push(REV[i]);
+  });
+  var dowAvgs = Object.keys(dowMap).map(function(d){
+    var vals = dowMap[d];
+    return {day:d, avg: vals.length ? vals.reduce(function(a,b){return a+b;},0)/vals.length : 0, n:vals.length};
+  }).filter(function(x){return x.n > 0;}).sort(function(a,b){return b.avg-a.avg;});
+  var bestDay = dowAvgs[0] || {day:'N/A', avg:0};
+  var worstDay = dowAvgs[dowAvgs.length-1] || {day:'N/A', avg:0};
+
+  // Streak + trend
+  var dtgt = tgt / monthDays;
+  var streak = 0, maxStreak = 0, cur = 0;
+  REV.forEach(function(v){ if(v>0){ cur = v>=dtgt ? cur+1 : 0; maxStreak = Math.max(maxStreak,cur); } });
+  var last7 = REV.filter(function(v){return v>0;}).slice(-7);
+  var l7avg = last7.length ? last7.reduce(function(a,b){return a+b;},0)/last7.length : 0;
+  var trend = l7avg >= dAvg ? 'up' : 'down';
+
+  // Anomalies
+  var anomHigh = [], anomLow = [];
+  REV.forEach(function(v,i){ if(v>0 && v>dAvg*1.5) anomHigh.push({d:DATES[i],v:v}); if(v>0 && v<dAvg*0.5) anomLow.push({d:DATES[i],v:v}); });
+
+  function pill(val, good){ return '<span style="display:inline-block;padding:1px 8px;border-radius:12px;font-size:10px;font-weight:700;background:'+(good?'#14532d':'#450a0a')+';color:'+(good?'#86efac':'#fca5a5')+'">'+val+'</span>'; }
+  function iCard(icon, title, value, sub, color, extra){
+    return '<div class="kpi-card" style="padding:16px 18px"><div class="kpi-lbl">'+icon+' '+title+'</div>'
+      +'<div class="kpi-val" style="color:'+color+';font-size:20px">'+value+'</div>'
+      +'<div class="kpi-sub" style="margin-top:6px">'+sub+'</div>'
+      +(extra?'<div style="margin-top:8px;font-size:11px;color:var(--m1)">'+extra+'</div>':'')+'</div>';
+  }
+
+  var achColor = ach>=100?'var(--grn)':ach>=80?'var(--amb)':'var(--red)';
+  var indColor = ipc<=29?'var(--grn)':ipc<=33?'var(--amb)':'var(--red)';
+  var trendColor = trend==='up'?'var(--grn)':'var(--red)';
+
+  var h = '<div class="kpi-grid">';
+  h += iCard('💰','MTD Revenue', '₹'+fmtN(tRev), 'vs Target ₹'+fmtN(tgt), achColor, pill(ach.toFixed(1)+'% achieved', ach>=80)+' '+pill(dLeft+' days left', dLeft>7));
+  h += iCard('📈','Daily Avg (MTD)', '₹'+fmtN(Math.round(dAvg)), 'L7d Avg: ₹'+fmtN(Math.round(l7avg)), trendColor, 'Trend: '+(trend==='up'?'▲ Improving':'▼ Slowing'));
+  h += iCard('🎯','Required/Day', reqPerDay>0?'₹'+fmtN(Math.round(reqPerDay)):'On Target!', 'to hit ₹'+fmtN(tgt)+' in '+dLeft+'d', reqPerDay>dAvg*1.15?'var(--red)':reqPerDay>0?'var(--amb)':'var(--grn)', 'Proj month-end: ₹'+fmtN(Math.round(proj)));
+  h += iCard('📦','Indent %', ipc.toFixed(1)+'%', 'RM ₹'+fmtN(tRM)+' + CP ₹'+fmtN(tCP), indColor, pill(ipc<=29?'Within 29% target':'Above 29% target ⚠', ipc<=29));
+  h += iCard('⛽','Gas MTD', '₹'+fmtN(tGasV), gasP.toFixed(1)+'% of revenue', gasP<=3?'var(--grn)':'var(--amb)', 'Water: ₹'+fmtN(tWatV)+' ('+watP.toFixed(1)+'%)');
+  h += iCard('🏆','Best Day', bestDay.day, 'Avg ₹'+fmtN(Math.round(bestDay.avg)), 'var(--grn)', 'Worst: '+worstDay.day+' · Avg ₹'+fmtN(Math.round(worstDay.avg)));
+  h += '</div>';
+
+  // Anomalies
+  if(anomHigh.length || anomLow.length){
+    h += '<div class="card card-body" style="margin-bottom:12px;border-left:3px solid var(--amb)">';
+    h += '<div class="card-title" style="color:var(--amb)">⚠ Revenue Anomalies</div>';
+    if(anomHigh.length) h += '<div style="font-size:12px;margin-bottom:6px;color:var(--grn)">▲ Spike days (1.5x avg): '+anomHigh.map(function(x){return x.d+' ₹'+fmtN(x.v);}).join(', ')+'</div>';
+    if(anomLow.length)  h += '<div style="font-size:12px;color:var(--red)">▼ Low days (below 0.5x avg): '+anomLow.map(function(x){return x.d+' ₹'+fmtN(x.v);}).join(', ')+'</div>';
+    h += '</div>';
+  }
+
+  // Smart action flags
+  var flags = [];
+  if(ach < 80 && dLeft > 0) flags.push({c:'var(--red)', t:'Revenue Alert', b:'Only '+ach.toFixed(0)+'% of target met. Need ₹'+fmtN(Math.round(reqPerDay))+'/day for remaining '+dLeft+' days.'});
+  if(ipc > 29) flags.push({c:'var(--red)', t:'Indent Overrun', b:'Indent at '+ipc.toFixed(1)+'% vs 29% target. Excess: ₹'+fmtN(Math.round(tInd - tRev*0.29))+'.'});
+  if(trend === 'down' && dLeft > 3) flags.push({c:'var(--amb)', t:'Declining Trend', b:'Last 7d avg ₹'+fmtN(Math.round(l7avg))+' is below MTD avg ₹'+fmtN(Math.round(dAvg))+'. Investigate causes.'});
+  if(gasP > 3.5) flags.push({c:'var(--amb)', t:'Gas Cost Elevated', b:'Gas is '+gasP.toFixed(1)+'% of revenue. Budget pace: keep below 3.5%.'});
+  if(ach >= 100) flags.push({c:'var(--grn)', t:'Target Achieved! 🎉', b:'MTD revenue ₹'+fmtN(tRev)+' exceeds target. Focus on margin improvement.'});
+  if(maxStreak >= 5) flags.push({c:'var(--grn)', t:'Streak: '+maxStreak+' days', b:maxStreak+' consecutive days above daily target. Great consistency!'});
+  if(!flags.length) flags.push({c:'var(--grn)', t:'All Systems Healthy', b:'Revenue, cost, and trend indicators are all within acceptable ranges.'});
+
+  h += '<div class="card card-body" style="border-left:4px solid var(--blu)">';
+  h += '<div class="card-title" style="color:var(--blu)">🎯 Smart Action Flags</div>';
+  h += '<div style="display:flex;flex-direction:column;gap:10px;margin-top:4px">';
+  flags.forEach(function(f){
+    h += '<div style="padding:10px 14px;background:var(--s2);border-radius:10px;border-left:3px solid '+f.c+'">'
+      +'<div style="font-size:12px;font-weight:700;color:'+f.c+';margin-bottom:3px">'+f.t+'</div>'
+      +'<div style="font-size:12px;color:var(--m2);line-height:1.6">'+f.b+'</div></div>';
+  });
+  h += '</div></div>';
+  el.innerHTML = h;
+}
+
+function askSuggested(question){
+  var input = document.getElementById('chatInput');
+  if(input) input.value = question;
+  document.querySelectorAll('#page-intel .stab-btn').forEach(function(b){
+    if(b.textContent.indexOf('Chat') !== -1) switchSubTab('chat', b);
+  });
+  setTimeout(function(){ sendChat(); }, 100);
+}
+
+function clearChat(){
+  var h = document.getElementById('chatHistory');
+  if(h) h.innerHTML = '<div style="align-self:flex-start;background:var(--s2);padding:10px 14px;border-radius:12px;border-bottom-left-radius:2px;font-size:13px;line-height:1.5;color:var(--txt);max-width:85%">Chat cleared. Ask me anything about your data!</div>';
+  window.chatHistory = [];
+}
+
 function buildCtx(){
   var ctx = 'GLOBAL CONTEXT - YOU HAVE ACCESS TO ALL THIS DATA:\n\n';
   
@@ -1552,17 +1697,37 @@ function runIntel(mode){
   var prompt = '';
 
   if(mode === 'analysis'){
-    prompt = ctx+'\n\nProvide a comprehensive performance analysis:\n1. Revenue Health \u2014 MTD status, is target achievable?\n2. Cost Efficiency \u2014 Indent %, Gas, Water, Packaging red flags?\n3. Day Patterns \u2014 best/worst performing periods\n4. Month-end forecast\n5. Top 3 action items for today\nBe sharp, under 300 words, use \u20b9 numbers throughout.';
+    prompt = ctx+'\n\nProvide a sharp, structured performance analysis with REAL \u20b9 numbers from the data:\n'
+      +'1. REVENUE HEALTH \u2014 MTD \u20b9 vs target \u20b9, % achieved, on/off track verdict\n'
+      +'2. COST EFFICIENCY \u2014 Indent % actual vs 29% target, Gas & Water as % of revenue, flag any overshoot\n'
+      +'3. DAY-OF-WEEK PATTERNS \u2014 best and worst performing days with \u20b9 averages\n'
+      +'4. ANOMALIES \u2014 any unusually high/low days, spikes in costs\n'
+      +'5. MONTH-END FORECAST \u2014 projected \u20b9 at current pace vs target\n'
+      +'6. TOP 5 ACTION ITEMS \u2014 specific, quantified, for today\n'
+      +'Keep it under 350 words. Use \u20b9 formatting. Be direct and data-driven.';
   } else if(mode === 'forecast'){
-    prompt = ctx+'\n\nGenerate a month-end forecast:\n1. Revenue scenarios \u2014 pessimistic/realistic/optimistic with \u20b9 figures\n2. Which cost heads will breach budget? By how much?\n3. Gas trend vs \u20b93.6L annual budget pace\n4. What must happen in '+m.dLeft+' remaining days to hit target?\nStructured report with clear sections.';
+    var dLeft = m.dLeft || 0;
+    var reqDaily = (dLeft > 0 && m.gap > 0) ? Math.round(m.gap / dLeft) : 0;
+    prompt = ctx+'\n\nGenerate a precise month-end forecast report:\n'
+      +'Days remaining: '+dLeft+'\n'
+      +'Revenue needed per day to hit target: \u20b9'+fmtN(reqDaily)+'\n\n'
+      +'1. SCENARIOS \u2014 Pessimistic (80% of current pace), Realistic (current pace), Optimistic (L7 avg pace) \u2014 all with \u20b9 figures\n'
+      +'2. REQUIRED DAILY REVENUE \u2014 exact \u20b9 per day needed for remaining '+dLeft+' days\n'
+      +'3. COST OVERRUN RISK \u2014 which cost heads are on track to breach monthly budget?\n'
+      +'4. GAS TREND \u2014 current pace vs \u20b93.6L annual budget\n'
+      +'5. CONFIDENCE SCORE \u2014 rate target achievability 1-10 with reasoning\n'
+      +'Structured, specific, under 300 words.';
   } else {
+    var lastRev = REV.length ? REV[REV.length-1] : 0;
     var msgPrompts = {
-      daily_brief:   ctx+'\n\nDraft a crisp daily WhatsApp ops brief for the SJP store team. Include yesterday\'s revenue (\u20b9'+fmtN(REV[REV.length-1])+'), MTD status ('+m.ach.toFixed(0)+'% of target), 2\u20133 action points for today. Motivating but direct. Under 100 words. Bullet points.',
-      mgmt_report:   ctx+'\n\nDraft a concise management report for Jagan to send to senior management about SJP April performance. Professional. MTD revenue, target %, key cost ratios, risks, month-end projection. Under 150 words.',
-      cost_alert:    ctx+'\n\nDraft an urgent cost-control alert from Jagan to his team. Indent is '+m.ipcMTD.toFixed(1)+'% vs 29% target. '+(m.ipcMTD>29?'ABOVE target \u2014 urgent action needed.':'Within target \u2014 maintain discipline.')+' Firm, clear, actionable. Under 80 words.',
-      vendor_follow: ctx+'\n\nDraft a WhatsApp message from Jagan to his store manager to follow up on pending vendor payments and supply status for SJP. Professional, brief, under 60 words.',
+      daily_brief:   ctx+'\n\nDraft a crisp daily WhatsApp ops brief for the SJP store team. Yesterday revenue: \u20b9'+fmtN(lastRev)+'. MTD: '+m.ach.toFixed(0)+'% of target. Include: yesterday number, MTD status, 3 clear action points for today. Motivating but direct. Under 100 words. Use bullet points.',
+      mgmt_report:   ctx+'\n\nDraft a concise management report for senior management. Include: MTD revenue \u20b9 & % of target, key cost ratios (indent %, gas %, water %), top risk, month-end projection in 3 scenarios. Professional tone. Under 180 words.',
+      cost_alert:    ctx+'\n\nDraft an urgent cost-control alert from store manager to team. Indent is '+m.ipcMTD.toFixed(1)+'% vs 29% target. '+(m.ipcMTD>29?'ABOVE target — urgent reduction needed.':'Within target — maintain discipline.')+' Include specific numbers. Firm, clear, actionable. Under 80 words.',
+      vendor_follow: ctx+'\n\nDraft a WhatsApp follow-up from store manager to vendors about pending supplies and payments for SJP. Reference current month performance context. Professional, brief, under 70 words.',
+      shift_report:  ctx+'\n\nDraft an end-of-shift handover note for the incoming shift manager. Include: today revenue \u20b9'+fmtN(lastRev)+', MTD status, key pending items, instructions for next shift. Ops-focused, bullet format, under 100 words.',
+      investor_update: ctx+'\n\nDraft a brief investor/stakeholder update on SJP performance. Include: MTD revenue vs target, margin %, month-end projection, key risks and mitigations. Professional, confident tone. Under 150 words.',
     };
-    prompt = msgPrompts[selMsgType];
+    prompt = msgPrompts[selMsgType] || msgPrompts['daily_brief'];
   }
 
   fetch('https://api.groq.com/openai/v1/chat/completions', {
