@@ -79,6 +79,13 @@ function parseAppsScriptTabs(json){
       return;
     }
 
+    // Skip sheets that don't have a month name (e.g., "Scrap sale")
+    var hasMonth = /(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)/i.test(tab.name);
+    if (!hasMonth) {
+      console.log("Skipping non-month tab:", tab.name);
+      return;
+    }
+
     var data = tab.data;
     if(!data || !data.length) return;
     
