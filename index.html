@@ -341,6 +341,7 @@ tbody tr:last-child td{border-bottom:none}
   <button class="nav-btn" data-page="costs">⚙️ Costs</button>
   <button class="nav-btn" data-page="daily">📅 Daily Log</button>
   <button class="nav-btn" data-page="mis">📑 MIS</button>
+  <button class="nav-btn" data-page="salesdetail">📊 Sales Detail</button>
   <button class="nav-btn" data-page="team">🧑‍🤝‍🧑 Team</button>
   <button class="nav-btn" data-page="intel">✦ Intelligence</button>
   <button class="nav-btn" data-page="analysis">📈 Analysis</button>
@@ -923,6 +924,135 @@ tbody tr:last-child td{border-bottom:none}
   </div>
 </div>
 
+<!-- ══════════ SALES DETAIL ══════════ -->
+<div class="page" id="page-salesdetail">
+  <div style="font-size:17px;font-weight:800;margin-bottom:4px">📊 Sales Detail & Operations</div>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;gap:12px;flex-wrap:wrap">
+    <div style="font-size:11px;color:var(--m1);flex:1;min-width:200px">Granular analysis of revenue channels, meal slots, order trends, AOV, and cancellations.</div>
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+      <select id="salesMonthFilter" class="inp" style="width:auto;font-size:11px;padding:4px 10px;height:auto" onchange="buildSalesDetailCharts()">
+        <option value="all">All Months</option>
+      </select>
+      <select id="salesSlotFilter" class="inp" style="width:auto;font-size:11px;padding:4px 10px;height:auto" onchange="buildSalesDetailCharts()">
+        <option value="all_slots">All Slots (Combined)</option>
+        <option value="slots_split">Split by Slot</option>
+        <option value="Breakfast (7AM-12PM)">Breakfast (7AM-12PM)</option>
+        <option value="Lunch (12PM-4PM)">Lunch (12PM-4PM)</option>
+        <option value="Snacks (4PM-7PM)">Snacks (4PM-7PM)</option>
+        <option value="Dinner (7PM+)">Dinner (7PM+)</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- KPI Strip -->
+  <div class="kpi-grid" id="salesKpiGrid" style="margin-bottom:12px">
+    <!-- Populated dynamically -->
+  </div>
+
+  <!-- Revenue Trend and Channel Share -->
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="card card-body">
+      <div class="card-title" id="salesTrendTitle">Daily Revenue Trend</div>
+      <div class="chart-wrap">
+        <button class="exp-btn" onclick="expandChart('chSalesTrend', 'Daily Revenue Trend')">⛶</button>
+        <div style="position:relative;height:240px"><canvas id="chartSalesTrend"></canvas></div>
+      </div>
+    </div>
+    <div class="card card-body">
+      <div class="card-title">Revenue Channel Mix</div>
+      <div class="chart-wrap">
+        <button class="exp-btn" onclick="expandChart('chSalesChannelShare', 'Revenue Channel Mix')">⛶</button>
+        <div style="position:relative;height:240px"><canvas id="chartSalesChannelShare"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delivery Partner & Aov Trend -->
+  <div class="grid2" style="margin-bottom:12px">
+    <div class="card card-body">
+      <div class="card-title">Zomato vs Swiggy Channel</div>
+      <div class="chart-wrap">
+        <button class="exp-btn" onclick="expandChart('chSalesDeliveryComparison', 'Zomato vs Swiggy Comparison')">⛶</button>
+        <div style="position:relative;height:240px"><canvas id="chartSalesDeliveryComparison"></canvas></div>
+      </div>
+    </div>
+    <div class="card card-body">
+      <div class="card-title">AOV & Orders Volume</div>
+      <div class="chart-wrap">
+        <button class="exp-btn" onclick="expandChart('chSalesAovTrend', 'AOV and Orders Trend')">⛶</button>
+        <div style="position:relative;height:240px"><canvas id="chartSalesAovTrend"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Meal Slot share (only shown when slots_split or all_slots is active) -->
+  <div class="card card-body" id="salesSlotShareCard" style="margin-bottom:12px; display:none;">
+    <div class="card-title">Meal Slot Revenue Mix</div>
+    <div class="chart-wrap">
+      <button class="exp-btn" onclick="expandChart('chSalesSlotShare', 'Meal Slot Share')">⛶</button>
+      <div style="position:relative;height:240px"><canvas id="chartSalesSlotShare"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Meal Slot Operations Matrix -->
+  <div class="card card-body" style="margin-bottom:12px">
+    <div class="card-title" style="padding:0 10px">Meal Slot Operations Summary</div>
+    <div class="tbl-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Meal Slot</th>
+            <th class="num">Gross Revenue</th>
+            <th class="num">Net Revenue (Gross-Tax)</th>
+            <th class="num">Dine-In</th>
+            <th class="num">Pickup</th>
+            <th class="num">Delivery</th>
+            <th class="num">Zomato</th>
+            <th class="num">Swiggy</th>
+            <th class="num">Total Orders</th>
+            <th class="num">AOV</th>
+            <th class="num">Cancellations</th>
+          </tr>
+        </thead>
+        <tbody id="salesMatrixBody">
+          <!-- Populated dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Operations Log Table -->
+  <div class="card card-body">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 10px">
+      <div class="card-title" style="margin:0;padding:0">Daily Sales Operations Log</div>
+      <input type="text" id="salesLogSearch" class="inp" placeholder="Search date..." style="width:160px;font-size:11px;padding:4px 10px;height:auto" oninput="renderSalesLogTable()">
+    </div>
+    <div class="tbl-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Meal Slot</th>
+            <th class="num">Gross Revenue</th>
+            <th class="num">Net Revenue (Gross-Tax)</th>
+            <th class="num">Dine-In Rev</th>
+            <th class="num">Pickup Rev</th>
+            <th class="num">Delivery Rev</th>
+            <th class="num">Zomato Rev (Orders)</th>
+            <th class="num">Swiggy Rev (Orders)</th>
+            <th class="num">Total Orders</th>
+            <th class="num">AOV</th>
+            <th class="num">Cancelled</th>
+          </tr>
+        </thead>
+        <tbody id="salesLogBody">
+          <!-- Populated dynamically -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
 <!-- ══════════ DATA SOURCE ══════════ -->
 <div class="page" id="page-datasrc">
   <div style="font-size:17px;font-weight:800;margin-bottom:4px">🔗 Data Source</div>
@@ -1482,6 +1612,9 @@ function buildPageCharts(page){
   }
   if(page === 'intel') {
     buildIntelInsights();
+  }
+  if(page === 'salesdetail' && window.buildSalesDetailCharts) {
+    buildSalesDetailCharts();
   }
 }
 
