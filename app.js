@@ -1525,6 +1525,34 @@ function buildAnBenchmark() {
     `;
   }
 
+  killChart('chAnBenchmark');
+  var cBench = document.getElementById('chartAnBenchmark');
+  if(cBench) CI.chAnBenchmark = new Chart(cBench, {
+    type: 'bar',
+    data: {
+      labels: ['Historical Benchmark', 'Current Performance'],
+      datasets: [{
+        data: [avg4, todayVal],
+        backgroundColor: ['rgba(255,255,255,0.15)', 'var(--amb)'],
+        borderRadius: 12, barThickness: 80
+      }]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      layout: { padding: { top: 35 } },
+      plugins:{
+        legend:{display:false},
+        datalabels: {
+          color: '#fff', font: { weight: 'bold', size: 12 },
+          formatter: function(v){ return '₹' + fmtN(v); }, anchor: 'end', align: 'top',
+          offset: 5
+        }
+      },
+      scales:{
+        y:{display:false, suggestedMax: Math.max(avg4, todayVal) * 1.2},
+        x:{ticks:{color:'#f8fafc', font:{size:12, weight:'700'}}, grid:{display:false}}
+      }
+    }
   });
 }
 
