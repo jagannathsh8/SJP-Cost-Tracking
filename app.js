@@ -165,11 +165,34 @@ async function fetchOutletData(outletId, url){
       var num = parseFloat(s);
       return isNaN(num) ? 0 : num;
     };
+    // Flexible fuzzy key finder: finds first key containing all needle words (case-insensitive)
+    var findKey = function(row, needles) {
+      var keys = Object.keys(row);
+      for (var ni = 0; ni < needles.length; ni++) {
+        var parts = needles[ni].toLowerCase().split(' ');
+        var match = keys.find(function(k) {
+          var kl = k.toLowerCase();
+          return parts.every(function(p) { return kl.indexOf(p) !== -1; });
+        });
+        if (match !== undefined) return cleanNum(row[match]);
+      }
+      return 0;
+    };
     window.SALES_SUMMARY_DATA[outletId] = parsedTabs[salesSummaryTabName].map(function(row) {
-      var gross = cleanNum(row['Gross Revenue'] || row['GrossRevenue'] || row['gross revenue'] || row['grossrevenue']);
-      var tax = cleanNum(row['Total Tax'] || row['TotalTax'] || row['total tax'] || row['totaltax'] || row['Tax'] || row['tax']);
-      // Calculate Net Revenue as Gross - Tax as requested
+      var gross = cleanNum(row['Gross Revenue'] || row['GrossRevenue'] || row['gross revenue'] || 0);
+      var tax = cleanNum(row['Total Tax'] || row['TotalTax'] || row['total tax'] || row['Tax'] || row['tax'] || 0);
       var calculatedNet = gross - tax;
+      // Flexible lookups for columns whose names vary by outlet
+      var dineInRev     = findKey(row, ['dine in rev', 'dine-in rev', 'dinein rev', 'dineinrev']);
+      var pickupRev     = findKey(row, ['pick up rev', 'pickup rev', 'pickuprev']);
+      var deliveryRev   = findKey(row, ['delivery(parcel) rev', 'delivery parcel rev', 'delivery rev', 'deliveryrev']);
+      var dineInOrders  = findKey(row, ['dine in orders', 'dine-in orders', 'dinein orders', 'dineinorders']);
+      var pickupOrders  = findKey(row, ['pick up orders', 'pickup orders', 'pickuporders']);
+      var deliveryOrders= findKey(row, ['delivery(parcel) orders', 'delivery parcel orders', 'delivery orders', 'deliveryorders']);
+      var swiggyRev     = findKey(row, ['swiggy rev', 'swiggyrev']);
+      var swiggyOrders  = findKey(row, ['swiggy orders', 'swiggyorders']);
+      var zomatoRev     = findKey(row, ['zomato rev', 'zomatorev']);
+      var zomatoOrders  = findKey(row, ['zomato orders', 'zomatoorders']);
       return {
         Date: row['Date'] || row['date'] || '',
         Outlet: row['Outlet'] || row['outlet'] || '',
@@ -177,19 +200,22 @@ async function fetchOutletData(outletId, url){
         GrossRevenue: gross,
         NetRevenue: calculatedNet,
         TotalTax: tax,
-        Packaging: cleanNum(row['Packaging'] || row['packaging']),
-        DineInRev: cleanNum(row['Dine-In Rev'] || row['Dine-in Rev'] || row['DineInRev'] || row['dine-in rev'] || row['dineinrev']),
-        PickupRev: cleanNum(row['Pickup Rev'] || row['PickupRev'] || row['pickup rev'] || row['pickuprev']),
-        DeliveryRev: cleanNum(row['Delivery Rev'] || row['DeliveryRev'] || row['delivery rev'] || row['deliveryrev']),
-        ZomatoRev: cleanNum(row['Zomato Rev'] || row['ZomatoRev'] || row['zomato rev'] || row['zomatorev']),
-        ZomatoOrders: cleanNum(row['Zomato Orders'] || row['ZomatoOrders'] || row['zomato orders'] || row['zomatoorders']),
-        SwiggyRev: cleanNum(row['Swiggy Rev'] || row['SwiggyRev'] || row['swiggy rev'] || row['swiggyrev']),
-        SwiggyOrders: cleanNum(row['Swiggy Orders'] || row['SwiggyOrders'] || row['swiggy orders'] || row['swiggyorders']),
-        OtherDeliveryRev: cleanNum(row['Other Delivery Rev'] || row['OtherDeliveryRev'] || row['other delivery rev'] || row['otherdeliveryrev']),
-        UpiWalletRev: cleanNum(row['UPI/Wallet Rev'] || row['UPI/WalletRev'] || row['upi/wallet rev'] || row['upi/walletrev'] || row['UPI/Wallet'] || row['upi/wallet']),
-        CancelledOrders: cleanNum(row['Cancelled Orders'] || row['CancelledOrders'] || row['cancelled orders'] || row['cancelledorders']),
-        TotalOrders: cleanNum(row['Total Orders'] || row['TotalOrders'] || row['total orders'] || row['totalorders']),
-        AOV: cleanNum(row['AOV'] || row['aov'])
+        Packaging: cleanNum(row['Packaging'] || row['packaging'] || 0),
+        DineInRev: dineInRev,
+        DineInOrders: dineInOrders,
+        PickupRev: pickupRev,
+        PickupOrders: pickupOrders,
+        DeliveryRev: deliveryRev,
+        DeliveryOrders: deliveryOrders,
+        ZomatoRev: zomatoRev,
+        ZomatoOrders: zomatoOrders,
+        SwiggyRev: swiggyRev,
+        SwiggyOrders: swiggyOrders,
+        OtherDeliveryRev: findKey(row, ['other delivery rev', 'otherdeliveryrev']),
+        UpiWalletRev: findKey(row, ['upi/wallet rev', 'upi wallet rev', 'upi/wallet', 'upi wallet']),
+        CancelledOrders: cleanNum(row['Cancelled Orders'] || row['CancelledOrders'] || row['cancelled orders'] || 0),
+        TotalOrders: cleanNum(row['Total Orders'] || row['TotalOrders'] || row['total orders'] || 0),
+        AOV: cleanNum(row['AOV'] || row['aov'] || 0)
       };
     });
     delete parsedTabs[salesSummaryTabName];
@@ -236,6 +262,8 @@ function switchActiveSheet(compositeId){
   document.getElementById('hdrSub').textContent = 'MIS Dashboard · '+DATES.length+' days · Jagan';
   killAllCharts();
   Object.keys(builtPages).forEach(function(k){ delete builtPages[k]; });
+  // salesdetail must always refresh after a sheet switch
+  delete builtPages['salesdetail'];
   renderUI();
   
   // Re-build the currently active page instead of hardcoding 'overview'

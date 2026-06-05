@@ -1628,8 +1628,9 @@ function killChart(id){ if(CI[id]){ try{CI[id].destroy();}catch(e){} delete CI[i
 function killAllCharts(){ Object.keys(CI).forEach(function(k){ killChart(k); }); }
 
 function buildPageCharts(page){
-  if(builtPages[page]) return;
-  builtPages[page] = true;
+  // salesdetail must always re-render (data can sync at any time)
+  if(page !== 'salesdetail' && builtPages[page]) return;
+  if(page !== 'salesdetail') builtPages[page] = true;
   var m = calcMetrics();
   var xl = DATES.map(shortD);
 
@@ -1756,6 +1757,8 @@ document.getElementById('navBar').addEventListener('click', function(e){
   document.querySelectorAll('.page').forEach(function(p){ p.classList.remove('active'); });
   btn.classList.add('active');
   document.getElementById('page-'+pid).classList.add('active');
+  // Always refresh salesdetail when navigating to it
+  if(pid === 'salesdetail') delete builtPages['salesdetail'];
   setTimeout(function(){ buildPageCharts(pid); }, 60);
 });
 
