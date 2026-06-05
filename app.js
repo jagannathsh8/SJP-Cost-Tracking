@@ -1557,22 +1557,40 @@ function buildAnBenchmark() {
 }
 
 // ═══════════════════════════════════════════════
-// SALES DETAIL LOGIC (REBUILT)
+// SALES DETAIL LOGIC
 // ═══════════════════════════════════════════════
+window.activeSalesSubTab = window.activeSalesSubTab || 'overview';
 
-// Sub-tab switching
 window.switchSalesTab = function(tab, btn) {
-  ['overview','channels','daycompare','slots','datatables'].forEach(function(t){
-    var el = document.getElementById('salesTab-'+t);
-    if(el) el.style.display = t===tab ? 'block' : 'none';
+  window.activeSalesSubTab = tab;
+  
+  // Toggle tab contents
+  ['overview', 'channels', 'daycompare', 'slots', 'datatables'].forEach(function(t) {
+    var el = document.getElementById('salesTab-' + t);
+    if (el) el.style.display = (t === tab) ? 'block' : 'none';
   });
-  document.querySelectorAll('#page-salesdetail .stab-btn').forEach(function(b){ b.classList.remove('active'); });
-  if(btn) btn.classList.add('active');
-  // Rebuild charts for the active sub-tab
+  
+  // Update active tab button
+  document.querySelectorAll('#page-salesdetail .stab-btn').forEach(function(b) {
+    b.classList.remove('active');
+  });
+  if (btn) {
+    btn.classList.add('active');
+  }
+  
+  // Toggle visibility of slot filter (only needed for slots and datatables)
+  var slotFilter = document.getElementById('salesSlotFilter');
+  if (slotFilter) {
+    if (tab === 'slots' || tab === 'datatables') {
+      slotFilter.style.display = 'inline-block';
+    } else {
+      slotFilter.style.display = 'none';
+    }
+  }
+  
   buildSalesDetailCharts();
 };
 
-// Helper: get day name from date string
 function getDayNameFromDate(dateStr) {
   if(!dateStr) return '';
   var d = new Date(dateStr);
@@ -1581,7 +1599,6 @@ function getDayNameFromDate(dateStr) {
   return days[d.getDay()];
 }
 
-// Helper: format date for display
 function fmtDateShort(dateStr) {
   if(!dateStr) return '';
   var parts = dateStr.split('-');
@@ -1590,20 +1607,100 @@ function fmtDateShort(dateStr) {
   return parseInt(parts[2]) + ' ' + mNames[parseInt(parts[1]) - 1];
 }
 
-// Helper: get all sales data filtered by current month selection
-function getFilteredSalesData() {
-  var activeOutletId = activeSheetId ? activeSheetId.split('__')[0] : '';
-  if (!activeOutletId && SHEET_REGISTRY.length) activeOutletId = SHEET_REGISTRY[0].id;
-  var data = (window.SALES_SUMMARY_DATA && activeOutletId) ? window.SALES_SUMMARY_DATA[activeOutletId] : null;
-  if (!data || !data.length) return null;
-
-  var selectedMonth = document.getElementById('salesMonthFilter').value;
-  return data.filter(function(row) {
-    if (selectedMonth !== 'all') {
-      if (!row.Date || row.Date.indexOf(selectedMonth) !== 0) return false;
-    }
-    return true;
+function getWeekdayBaseline(allData, weekday, selectedMonth) {
+  var baselineRows = allData.filter(function(row) {
+    var isAllDay = row.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
+    if (!isAllDay) return false;
+    if (!row.Date) return false;
+    
+    // Exclude currently selected month
+    if (selectedMonth !== 'all' && row.Date.indexOf(selectedMonth) === 0) return false;
+    
+    return getDayNameFromDate(row.Date) === weekday;
   });
+  
+  baselineRows.sort(function(a, b) { return b.Date.localeCompare(a.Date); });
+  var recent4 = baselineRows.slice(0, 4);
+  
+  if (recent4.length === 0) {
+    recent4 = allData.filter(function(row) {
+      var isAllDay = row.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
+      if (!isAllDay) return false;
+      if (!row.Date) return false;
+      return getDayNameFromDate(row.Date) === weekday;
+    });
+  }
+  
+  var sumRev = recent4.reduce(function(a, r) { return a + r.GrossRevenue; }, 0);
+  var sumOrd = recent4.reduce(function(a, r) { return a + r.TotalOrders; }, 0);
+  
+  return {
+    rev: recent4.length > 0 ? sumRev / recent4.length : 0,
+    ord: recent4.length > 0 ? sumOrd / recent4.length : 0
+  };
+}
+
+function getCompareData(allData, selectedMonth, offsetMonths) {
+  if (!selectedMonth || selectedMonth === 'all') return null;
+  
+  var parts = selectedMonth.split('-');
+  var curYear = parseInt(parts[0]);
+  var curMonth = parseInt(parts[1]);
+  
+  var targetYear = curYear;
+  var targetMonth = curMonth - offsetMonths;
+  while (targetMonth <= 0) {
+    targetMonth += 12;
+    targetYear -= 1;
+  }
+  
+  var targetMonthStr = targetYear + '-' + (targetMonth < 10 ? '0' + targetMonth : targetMonth);
+  
+  var curRows = allData.filter(function(r) {
+    return r.Date && r.Date.indexOf(selectedMonth) === 0 && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
+  });
+  
+  if (curRows.length === 0) return null;
+  
+  var curDays = curRows.map(function(r) {
+    var dParts = r.Date.split('-');
+    return dParts.length > 2 ? parseInt(dParts[2]) : 0;
+  }).filter(function(d) { return d > 0; });
+  
+  if (curDays.length === 0) return null;
+  var maxDay = Math.max.apply(null, curDays);
+  
+  var targetRows = allData.filter(function(r) {
+    if (!r.Date || r.Date.indexOf(targetMonthStr) !== 0 || r.MealSlot.toUpperCase().indexOf('ALL DAY') === -1) return false;
+    var dParts = r.Date.split('-');
+    var day = dParts.length > 2 ? parseInt(dParts[2]) : 0;
+    return day > 0 && day <= maxDay;
+  });
+  
+  if (targetRows.length === 0) return null;
+  
+  var curGross = curRows.reduce(function(a, r) { return a + r.GrossRevenue; }, 0);
+  var curOrders = curRows.reduce(function(a, r) { return a + r.TotalOrders; }, 0);
+  
+  var tgtGross = targetRows.reduce(function(a, r) { return a + r.GrossRevenue; }, 0);
+  var tgtOrders = targetRows.reduce(function(a, r) { return a + r.TotalOrders; }, 0);
+  
+  var sssg = tgtGross > 0 ? ((curGross - tgtGross) / tgtGross * 100) : 0;
+  var sstg = tgtOrders > 0 ? ((curOrders - tgtOrders) / tgtOrders * 100) : 0;
+  
+  var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  var targetMonthLabel = monthNames[targetMonth - 1] + ' ' + targetYear;
+  
+  return {
+    curGross: curGross,
+    curOrders: curOrders,
+    tgtGross: tgtGross,
+    tgtOrders: tgtOrders,
+    sssg: sssg,
+    sstg: sstg,
+    daysCompared: maxDay,
+    targetMonthLabel: targetMonthLabel
+  };
 }
 
 function buildSalesDetailCharts() {
@@ -1614,831 +1711,11 @@ function buildSalesDetailCharts() {
   
   var data = (window.SALES_SUMMARY_DATA && activeOutletId) ? window.SALES_SUMMARY_DATA[activeOutletId] : null;
   if (!data || !data.length) {
-    document.getElementById('salesKpiGrid').innerHTML = '<div style="padding:20px;color:var(--m1);grid-column: span 2;">Sync "Sales summary" tab on Data Source page to view details.</div>';
-    return;
-  }
-  
-  // Populate month filter
-  var monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  var uniqueMonths = {};
-  data.forEach(function(row) {
-    if (!row.Date) return;
-    var parts = row.Date.split('-');
-    if (parts.length < 2) return;
-    var y = parts[0];
-    var mIdx = parseInt(parts[1]) - 1;
-    var mName = monthNames[mIdx] + ' ' + y;
-    uniqueMonths[mName] = parts[0] + '-' + parts[1];
-  });
-  
-  var sortedMonths = Object.keys(uniqueMonths).sort(function(a, b) {
-    return uniqueMonths[a].localeCompare(uniqueMonths[b]);
-  });
-  
-  var monthFilter = document.getElementById('salesMonthFilter');
-  var prevMonthVal = monthFilter.value;
-  var lastOutletId = monthFilter.dataset.outletId || '';
-  
-  if (lastOutletId !== activeOutletId) {
-    monthFilter.innerHTML = '';
-    monthFilter.dataset.outletId = activeOutletId;
-    prevMonthVal = '';
-  }
-  
-  if (monthFilter.options.length <= 1 || !prevMonthVal) {
-    var html = '<option value="all">All Months</option>';
-    sortedMonths.forEach(function(m) {
-      var selected = (prevMonthVal === uniqueMonths[m]) ? ' selected' : '';
-      html += '<option value="' + uniqueMonths[m] + '"' + selected + '>' + m + '</option>';
-    });
-    monthFilter.innerHTML = html;
+    var kpiGrid = document.getElementById('salesKpiGrid');
+    if (kpiGrid) kpiGrid.innerHTML = '<div style="padding:20px;color:var(--m1);grid-column: span 2;">Sync "Sales summary" tab on Data Source page to view details.</div>';
     
-    if ((!prevMonthVal || prevMonthVal === 'all') && sortedMonths.length) {
-      monthFilter.value = uniqueMonths[sortedMonths[sortedMonths.length - 1]];
-    }
-  }
-  
-  var selectedMonth = monthFilter.value;
-  var slotFilter = document.getElementById('salesSlotFilter').value;
-  
-  var filteredData = data.filter(function(row) {
-    if (selectedMonth !== 'all') {
-      if (!row.Date || row.Date.indexOf(selectedMonth) !== 0) return false;
-    }
-    return true;
-  });
-  
-  var specificSlot = (slotFilter !== 'all_slots' && slotFilter !== 'slots_split') ? slotFilter : null;
-  
-  // Get ALL DAY rows for KPIs
-  var kpiData = filteredData.filter(function(row) {
-    var isAllDay = row.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
-    if (specificSlot) return row.MealSlot === specificSlot;
-    return isAllDay;
-  });
-  
-  // Aggregates
-  var totalGross = kpiData.reduce(function(a, r){ return a + r.GrossRevenue; }, 0);
-  var totalNet = kpiData.reduce(function(a, r){ return a + r.NetRevenue; }, 0);
-  var totalTax = kpiData.reduce(function(a, r){ return a + r.TotalTax; }, 0);
-  var totalPkg = kpiData.reduce(function(a, r){ return a + r.Packaging; }, 0);
-  var totalOrders = kpiData.reduce(function(a, r){ return a + r.TotalOrders; }, 0);
-  var totalCancelled = kpiData.reduce(function(a, r){ return a + r.CancelledOrders; }, 0);
-  var overallAov = totalOrders > 0 ? (totalGross / totalOrders) : 0;
-  var cancelPct = totalOrders > 0 ? (totalCancelled / totalOrders * 100) : 0;
-  
-  var totalDineIn = kpiData.reduce(function(a, r){ return a + r.DineInRev; }, 0);
-  var totalPickup = kpiData.reduce(function(a, r){ return a + r.PickupRev; }, 0);
-  var totalDelivery = kpiData.reduce(function(a, r){ return a + r.DeliveryRev; }, 0);
-  var totalZomatoRev = kpiData.reduce(function(a, r){ return a + r.ZomatoRev; }, 0);
-  var totalSwiggyRev = kpiData.reduce(function(a, r){ return a + r.SwiggyRev; }, 0);
-  var totalZomatoOrd = kpiData.reduce(function(a, r){ return a + r.ZomatoOrders; }, 0);
-  var totalSwiggyOrd = kpiData.reduce(function(a, r){ return a + r.SwiggyOrders; }, 0);
-  
-  // Unique dates
-  var datesSet = {};
-  filteredData.forEach(function(r) { if (r.Date) datesSet[r.Date] = true; });
-  var sortedDates = Object.keys(datesSet).sort();
-  var numDays = sortedDates.length;
-  var dailyLabels = sortedDates.map(fmtDateShort);
-  
-  // Slot names
-  var slotNames = ["Breakfast (7AM-12PM)", "Lunch (12PM-4PM)", "Snacks (4PM-7PM)", "Dinner (7PM+)"];
-  var slotColors = ['#f59e0b', '#60a5fa', '#a78bfa', '#f87171'];
-  
-  // Build daily series
-  var dailyGross = [], dailyNet = [], dailyDineIn = [], dailyPickup = [], dailyDelivery = [];
-  var dailyZomatoRev = [], dailySwiggyRev = [], dailyZomatoOrd = [], dailySwiggyOrd = [];
-  var dailyOrders = [], dailyAov = [], dailyCancelled = [];
-  
-  var slotRevSeries = {}; var slotOrdSeries = {};
-  slotNames.forEach(function(s){ slotRevSeries[s] = []; slotOrdSeries[s] = []; });
-  
-  sortedDates.forEach(function(d) {
-    var dayRows = filteredData.filter(function(r) { return r.Date === d; });
-    
-    slotNames.forEach(function(slot) {
-      var row = dayRows.find(function(r) { return r.MealSlot === slot; });
-      slotRevSeries[slot].push(row ? row.GrossRevenue : 0);
-      slotOrdSeries[slot].push(row ? row.TotalOrders : 0);
-    });
-    
-    var allDayRow = dayRows.find(function(r) {
-      if (specificSlot) return r.MealSlot === specificSlot;
-      return r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
-    });
-    
-    dailyGross.push(allDayRow ? allDayRow.GrossRevenue : 0);
-    dailyNet.push(allDayRow ? allDayRow.NetRevenue : 0);
-    dailyDineIn.push(allDayRow ? allDayRow.DineInRev : 0);
-    dailyPickup.push(allDayRow ? allDayRow.PickupRev : 0);
-    dailyDelivery.push(allDayRow ? allDayRow.DeliveryRev : 0);
-    dailyZomatoRev.push(allDayRow ? allDayRow.ZomatoRev : 0);
-    dailySwiggyRev.push(allDayRow ? allDayRow.SwiggyRev : 0);
-    dailyZomatoOrd.push(allDayRow ? allDayRow.ZomatoOrders : 0);
-    dailySwiggyOrd.push(allDayRow ? allDayRow.SwiggyOrders : 0);
-    dailyOrders.push(allDayRow ? allDayRow.TotalOrders : 0);
-    dailyAov.push(allDayRow ? allDayRow.AOV : 0);
-    dailyCancelled.push(allDayRow ? allDayRow.CancelledOrders : 0);
-  });
-
-  // ═══ OVERVIEW TAB ═══
-  var kpiGrid = document.getElementById('salesKpiGrid');
-  kpiGrid.innerHTML = [
-    {l:'GROSS REVENUE', v:'₹'+fmtN(totalGross), s:'Total sales before tax & packaging', c:'var(--grn)'},
-    {l:'NET REVENUE', v:'₹'+fmtN(totalNet), s:'Net Sales (Gross - Tax)', c:'#facc15'},
-    {l:'TOTAL ORDERS', v:fmtN(totalOrders), s:'Total orders placed', c:'#60a5fa'},
-    {l:'AVG ORDER VALUE', v:'₹'+overallAov.toFixed(2), s:'AOV = Gross / Orders', c:'#a78bfa'},
-    {l:'CANCELLED ORDERS', v:fmtN(totalCancelled), s:cancelPct.toFixed(1)+'% cancellation rate', c:'var(--red)'},
-    {l:'PACKAGING & TAX', v:'₹'+fmtN(totalPkg), s:'Tax subtracted: ₹'+fmtN(totalTax), c:'#38bdf8'}
-  ].map(function(k){
-    return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
-          +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
-          +'<div class="kpi-sub">'+k.s+'</div></div>';
-  }).join('');
-
-  // Channel KPIs (Delivery / Dine-In / Pickup)
-  var channelKpiGrid = document.getElementById('salesChannelKpiGrid');
-  if(channelKpiGrid) {
-    var totalChannelRev = totalDineIn + totalPickup + totalDelivery;
-    channelKpiGrid.innerHTML = [
-      {l:'DINE-IN REVENUE', v:'₹'+fmtN(totalDineIn), s:(totalChannelRev>0?((totalDineIn/totalChannelRev)*100).toFixed(1):0)+'% of channel revenue', c:'#22c55e', icon:'🍽️'},
-      {l:'PICKUP REVENUE', v:'₹'+fmtN(totalPickup), s:(totalChannelRev>0?((totalPickup/totalChannelRev)*100).toFixed(1):0)+'% of channel revenue', c:'#3b82f6', icon:'🛍️'},
-      {l:'DELIVERY REVENUE', v:'₹'+fmtN(totalDelivery), s:(totalChannelRev>0?((totalDelivery/totalChannelRev)*100).toFixed(1):0)+'% · Zomato ₹'+fmtN(totalZomatoRev)+' + Swiggy ₹'+fmtN(totalSwiggyRev), c:'#a78bfa', icon:'🚚'}
-    ].map(function(k){
-      return '<div class="kpi-card"><div class="kpi-lbl">'+k.icon+' '+k.l+'</div>'
-            +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
-            +'<div class="kpi-sub">'+k.s+'</div></div>';
-    }).join('');
-  }
-
-  // Kill all sales charts
-  var salesChartIds = ['chSalesTrend','chSalesChannelShare','chSalesOrderChannelMix','chSalesDeliveryComparison','chSalesDeliveryOrdComp','chSalesAovTrend','chSalesSlotShare',
-    'chSalesChannelRevTrend','chSalesChannelOrdTrend','chSalesDayVs4W','chSalesDayVs4WOrd','chSalesSameDayTrend',
-    'chSalesSlotTrend','chSalesSlotOrdTrend','chSalesSlot4WAvg'];
-  salesChartIds.forEach(function(id){ killChart(id); });
-
-  // ── Overview Charts ──
-  // Revenue Trend
-  var datasets1 = [];
-  if (slotFilter === 'slots_split') {
-    datasets1 = slotNames.map(function(slot, idx) {
-      return { label: slot.split(' ')[0], data: slotRevSeries[slot], backgroundColor: slotColors[idx], borderRadius: 4 };
-    });
-    document.getElementById('salesTrendTitle').textContent = 'Daily Revenue by Meal Slot';
-  } else {
-    datasets1 = [
-      { label: 'Gross Revenue', data: dailyGross, backgroundColor: 'rgba(34, 197, 94, 0.75)', borderRadius: 4 },
-      { label: 'Net Revenue (Gross-Tax)', data: dailyNet, backgroundColor: 'rgba(245, 158, 11, 0.75)', borderRadius: 4 }
-    ];
-    document.getElementById('salesTrendTitle').textContent = 'Daily Revenue Trend' + (specificSlot ? ' - ' + specificSlot.split(' ')[0] : '');
-  }
-  
-  CI.chSalesTrend = new Chart(document.getElementById('chartSalesTrend'), {
-    type: 'bar', data: { labels: dailyLabels, datasets: datasets1 },
-    options: { responsive: true, maintainAspectRatio: false,
-      scales: { x: { grid: { color: GC }, stacked: (slotFilter === 'slots_split'), ticks: { maxTicksLimit: 10 } },
-                y: { grid: { color: GC }, stacked: (slotFilter === 'slots_split'), ticks: { callback: function(v){ return '₹'+fmtN(v); } } } },
-      plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, callbacks: { label: function(c) { return c.dataset.label + ': ₹' + fmtN(c.raw); } } } }
-    }
-  });
-
-  // Revenue Channel Mix (Doughnut)
-  CI.chSalesChannelShare = new Chart(document.getElementById('chartSalesChannelShare'), {
-    type: 'doughnut', data: { labels: ['Dine-In', 'Pickup', 'Delivery'], datasets: [{ data: [totalDineIn, totalPickup, totalDelivery], backgroundColor: ['#22c55e', '#3b82f6', '#a78bfa'], borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '65%',
-      plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } }, tooltip: { ...TT, callbacks: { label: function(c) { var total = totalDineIn + totalPickup + totalDelivery; var pct = total > 0 ? (c.raw / total * 100).toFixed(1) : 0; return c.label + ': ₹' + fmtN(c.raw) + ' (' + pct + '%)'; } } } }
-    }
-  });
-
-  // Orders Channel Mix (Doughnut) - NEW
-  var dineInOrd = kpiData.reduce(function(a,r){ return a + (r.TotalOrders - r.ZomatoOrders - r.SwiggyOrders > 0 ? r.TotalOrders - r.ZomatoOrders - r.SwiggyOrders : 0); },0);
-  CI.chSalesOrderChannelMix = new Chart(document.getElementById('chartSalesOrderChannelMix'), {
-    type: 'doughnut', data: { labels: ['Dine-In + Pickup', 'Zomato', 'Swiggy'], datasets: [{ data: [dineInOrd, totalZomatoOrd, totalSwiggyOrd], backgroundColor: ['#22c55e', '#ef4444', '#f59e0b'], borderWidth: 0 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: '65%',
-      plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } }, tooltip: { ...TT, callbacks: { label: function(c) { var total = dineInOrd + totalZomatoOrd + totalSwiggyOrd; var pct = total > 0 ? (c.raw / total * 100).toFixed(1) : 0; return c.label + ': ' + fmtN(c.raw) + ' (' + pct + '%)'; } } } }
-    }
-  });
-
-  // AOV & Orders Trend
-  CI.chSalesAovTrend = new Chart(document.getElementById('chartSalesAovTrend'), {
-    type: 'bar', data: { labels: dailyLabels, datasets: [
-      { label: 'Orders', type: 'bar', data: dailyOrders, backgroundColor: '#3b82f6', yAxisID: 'yOrders', borderRadius: 4 },
-      { label: 'AOV', type: 'line', data: dailyAov, borderColor: '#a78bfa', backgroundColor: 'transparent', borderWidth: 2.5, tension: 0.4, pointRadius: 3, yAxisID: 'yAov' }
-    ] },
-    options: { responsive: true, maintainAspectRatio: false,
-      scales: { x: { grid: { color: GC }, ticks: { maxTicksLimit: 10 } },
-        yOrders: { type: 'linear', position: 'left', grid: { color: GC }, ticks: { color: '#3b82f6' }, title: { display: true, text: 'Orders', color: '#3b82f6' } },
-        yAov: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#a78bfa', callback: function(v){ return '₹'+fmtN(v); } }, title: { display: true, text: 'AOV (₹)', color: '#a78bfa' } }
-      },
-      plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, callbacks: { label: function(c) { if (c.dataset.label === 'AOV') return 'AOV: ₹' + c.raw.toFixed(2); return 'Orders: ' + c.raw; } } } }
-    }
-  });
-
-  // Slot share
-  var slotShareCard = document.getElementById('salesSlotShareCard');
-  if (slotFilter === 'all_slots' || slotFilter === 'slots_split') {
-    slotShareCard.style.display = 'block';
-    var slotSummaries = buildSlotSummaries(filteredData, slotNames);
-    var slotGrossValues = slotSummaries.filter(function(s){ return s.slot !== "ALL DAY TOTAL"; }).map(function(s){ return s.gross; });
-    CI.chSalesSlotShare = new Chart(document.getElementById('chartSalesSlotShare'), {
-      type: 'doughnut', data: { labels: ["Breakfast", "Lunch", "Snacks", "Dinner"], datasets: [{ data: slotGrossValues, backgroundColor: slotColors, borderWidth: 0 }] },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '65%',
-        plugins: { legend: { position: 'right', labels: { color: '#94a3b8' } }, tooltip: { ...TT, callbacks: { label: function(c) { var total = slotGrossValues.reduce(function(a,b){return a+b;},0); var pct = total > 0 ? (c.raw / total * 100).toFixed(1) : 0; return c.label + ': ₹' + fmtN(c.raw) + ' (' + pct + '%)'; } } } }
-      }
-    });
-  } else { slotShareCard.style.display = 'none'; }
-
-  // ═══ CHANNELS TAB ═══
-  // Channel Revenue Trend (Stacked)
-  var chRevEl = document.getElementById('chartSalesChannelRevTrend');
-  if(chRevEl) {
-    CI.chSalesChannelRevTrend = new Chart(chRevEl, {
-      type: 'bar', data: { labels: dailyLabels, datasets: [
-        { label: 'Dine-In', data: dailyDineIn, backgroundColor: '#22c55e', borderRadius: 2 },
-        { label: 'Pickup', data: dailyPickup, backgroundColor: '#3b82f6', borderRadius: 2 },
-        { label: 'Delivery', data: dailyDelivery, backgroundColor: '#a78bfa', borderRadius: 2 }
-      ] },
-      options: { responsive: true, maintainAspectRatio: false,
-        scales: { x: { stacked: true, grid: { color: GC }, ticks: { maxTicksLimit: 12 } }, y: { stacked: true, grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } } },
-        plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, mode: 'index', intersect: false, callbacks: { label: function(c) { return c.dataset.label + ': ₹' + fmtN(c.raw); } } } }
-      }
-    });
-  }
-
-  // Channel Orders Trend
-  var dailyDineInOrd = sortedDates.map(function(d,i){ return Math.max(0, dailyOrders[i] - dailyZomatoOrd[i] - dailySwiggyOrd[i]); });
-  var chOrdEl = document.getElementById('chartSalesChannelOrdTrend');
-  if(chOrdEl) {
-    CI.chSalesChannelOrdTrend = new Chart(chOrdEl, {
-      type: 'bar', data: { labels: dailyLabels, datasets: [
-        { label: 'Dine-In/Pickup', data: dailyDineInOrd, backgroundColor: '#22c55e', borderRadius: 2 },
-        { label: 'Zomato', data: dailyZomatoOrd, backgroundColor: '#ef4444', borderRadius: 2 },
-        { label: 'Swiggy', data: dailySwiggyOrd, backgroundColor: '#f59e0b', borderRadius: 2 }
-      ] },
-      options: { responsive: true, maintainAspectRatio: false,
-        scales: { x: { stacked: true, grid: { color: GC }, ticks: { maxTicksLimit: 12 } }, y: { stacked: true, grid: { color: GC } } },
-        plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, mode: 'index', intersect: false } }
-      }
-    });
-  }
-
-  // Zomato vs Swiggy Revenue
-  CI.chSalesDeliveryComparison = new Chart(document.getElementById('chartSalesDeliveryComparison'), {
-    type: 'bar', data: { labels: dailyLabels, datasets: [
-      { label: 'Zomato Rev', data: dailyZomatoRev, backgroundColor: '#ef4444', borderRadius: 4 },
-      { label: 'Swiggy Rev', data: dailySwiggyRev, backgroundColor: '#f59e0b', borderRadius: 4 }
-    ] },
-    options: { responsive: true, maintainAspectRatio: false,
-      scales: { x: { grid: { color: GC }, ticks: { maxTicksLimit: 10 } }, y: { grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } } },
-      plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, callbacks: { label: function(c) { return c.dataset.label + ': ₹' + fmtN(c.raw); } } } }
-    }
-  });
-
-  // Zomato vs Swiggy Orders
-  var chDelOrdEl = document.getElementById('chartSalesDeliveryOrdComp');
-  if(chDelOrdEl) {
-    CI.chSalesDeliveryOrdComp = new Chart(chDelOrdEl, {
-      type: 'bar', data: { labels: dailyLabels, datasets: [
-        { label: 'Zomato Orders', data: dailyZomatoOrd, backgroundColor: '#ef4444', borderRadius: 4 },
-        { label: 'Swiggy Orders', data: dailySwiggyOrd, backgroundColor: '#f59e0b', borderRadius: 4 }
-      ] },
-      options: { responsive: true, maintainAspectRatio: false,
-        scales: { x: { grid: { color: GC }, ticks: { maxTicksLimit: 10 } }, y: { grid: { color: GC } } },
-        plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT } }
-      }
-    });
-  }
-
-  // Channel Summary Table
-  buildChannelSummaryTable(kpiData, numDays, totalGross, totalOrders);
-
-  // ═══ DAY vs 4-WEEK AVG TAB ═══
-  populateDayCompareSelector(sortedDates);
-
-  // ═══ SLOT ANALYSIS TAB ═══
-  buildSlotAnalysis(filteredData, sortedDates, dailyLabels, slotNames, slotColors, slotRevSeries, slotOrdSeries, data);
-
-  // ═══ DATA TABLES TAB ═══
-  buildDowTable(kpiData, sortedDates);
-  buildWeeklyTable(kpiData, sortedDates);
-  renderSalesLogTable();
-}
-
-// ── Slot Summaries Builder ──
-function buildSlotSummaries(filteredData, slotNames) {
-  return slotNames.concat(["ALL DAY TOTAL"]).map(function(slot) {
-    var slotRows = filteredData.filter(function(r) { return r.MealSlot === slot; });
-    var gross = slotRows.reduce(function(a, r){ return a + r.GrossRevenue; }, 0);
-    var net = slotRows.reduce(function(a, r){ return a + r.NetRevenue; }, 0);
-    var dineIn = slotRows.reduce(function(a, r){ return a + r.DineInRev; }, 0);
-    var pickup = slotRows.reduce(function(a, r){ return a + r.PickupRev; }, 0);
-    var delivery = slotRows.reduce(function(a, r){ return a + r.DeliveryRev; }, 0);
-    var zomato = slotRows.reduce(function(a, r){ return a + r.ZomatoRev; }, 0);
-    var swiggy = slotRows.reduce(function(a, r){ return a + r.SwiggyRev; }, 0);
-    var orders = slotRows.reduce(function(a, r){ return a + r.TotalOrders; }, 0);
-    var cxl = slotRows.reduce(function(a, r){ return a + r.CancelledOrders; }, 0);
-    var aov = orders > 0 ? (gross / orders) : 0;
-    return { slot:slot, gross:gross, net:net, dineIn:dineIn, pickup:pickup, delivery:delivery, zomato:zomato, swiggy:swiggy, orders:orders, cxl:cxl, aov:aov };
-  });
-}
-
-// ── Channel Summary Table ──
-function buildChannelSummaryTable(kpiData, numDays, totalGross, totalOrders) {
-  var el = document.getElementById('salesChannelSummaryBody');
-  if(!el) return;
-  
-  var channels = [
-    { name: 'Dine-In', revKey: 'DineInRev', color: '#22c55e' },
-    { name: 'Pickup', revKey: 'PickupRev', color: '#3b82f6' },
-    { name: 'Delivery (Total)', revKey: 'DeliveryRev', color: '#a78bfa' },
-    { name: '  └ Zomato', revKey: 'ZomatoRev', ordKey: 'ZomatoOrders', color: '#ef4444' },
-    { name: '  └ Swiggy', revKey: 'SwiggyRev', ordKey: 'SwiggyOrders', color: '#f59e0b' }
-  ];
-  
-  el.innerHTML = channels.map(function(ch) {
-    var rev = kpiData.reduce(function(a,r){ return a + (r[ch.revKey]||0); }, 0);
-    var ord = ch.ordKey ? kpiData.reduce(function(a,r){ return a + (r[ch.ordKey]||0); }, 0) : 0;
-    var revPct = totalGross > 0 ? (rev/totalGross*100).toFixed(1) : '0.0';
-    var ordPct = totalOrders > 0 ? (ord/totalOrders*100).toFixed(1) : '—';
-    var aov = ord > 0 ? (rev/ord) : (rev > 0 ? '—' : 0);
-    var dailyAvgRev = numDays > 0 ? rev/numDays : 0;
-    var dailyAvgOrd = numDays > 0 && ch.ordKey ? ord/numDays : 0;
-    var peakRev = kpiData.reduce(function(mx,r){ return Math.max(mx, r[ch.revKey]||0); }, 0);
-    var isSub = ch.name.indexOf('└') !== -1;
-    
-    return '<tr style="'+(isSub?'background:rgba(255,255,255,0.015)':'')+'">'
-      +'<td style="color:'+ch.color+';font-weight:'+(isSub?500:700)+'">'+ch.name+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(rev)+'</td>'
-      +'<td class="num">'+revPct+'%</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">'+(ch.ordKey?fmtN(ord):'—')+'</td>'
-      +'<td class="num">'+(ch.ordKey?ordPct+'%':'—')+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">'+(typeof aov==='number'?'₹'+aov.toFixed(0):aov)+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(Math.round(dailyAvgRev))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">'+(ch.ordKey?dailyAvgOrd.toFixed(1):'—')+'</td>'
-      +'<td class="num" style="color:var(--grn);font-family:\'DM Mono\',monospace">₹'+fmtN(peakRev)+'</td>'
-      +'</tr>';
-  }).join('');
-}
-
-// ── Populate Day Compare Selector ──
-function populateDayCompareSelector(sortedDates) {
-  var sel = document.getElementById('salesDayCompareSelect');
-  if(!sel) return;
-  var prev = sel.value;
-  sel.innerHTML = '<option value="">-- Select a Date --</option>';
-  sortedDates.forEach(function(d) {
-    var dayName = getDayNameFromDate(d);
-    var label = fmtDateShort(d) + ' (' + dayName + ')';
-    sel.innerHTML += '<option value="'+d+'"'+(d===prev?' selected':'')+'>'+label+'</option>';
-  });
-  if(prev && sel.querySelector('option[value="'+prev+'"]')) {
-    sel.value = prev;
-    buildSalesDayCompare();
-  }
-}
-
-// ── Build Day vs 4-Week Average Comparison ──
-window.buildSalesDayCompare = function() {
-  var selectedDate = document.getElementById('salesDayCompareSelect').value;
-  if(!selectedDate) return;
-  
-  var activeOutletId = activeSheetId ? activeSheetId.split('__')[0] : '';
-  var allData = (window.SALES_SUMMARY_DATA && activeOutletId) ? window.SALES_SUMMARY_DATA[activeOutletId] : [];
-  if(!allData.length) return;
-  
-  var dayName = getDayNameFromDate(selectedDate);
-  document.getElementById('salesDayCompareDayName').textContent = dayName ? '📅 ' + dayName : '';
-  
-  // Get selected day ALL DAY row
-  var selectedRow = allData.find(function(r) {
-    return r.Date === selectedDate && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
-  });
-  if(!selectedRow) return;
-  
-  // Find same weekday rows from all data (4-week lookback)
-  var selectedDateObj = new Date(selectedDate);
-  var selectedDOW = selectedDateObj.getDay();
-  var sameDayRows = allData.filter(function(r) {
-    if(r.Date === selectedDate) return false;
-    if(r.MealSlot.toUpperCase().indexOf('ALL DAY') === -1) return false;
-    var d = new Date(r.Date);
-    if(d.getDay() !== selectedDOW) return false;
-    // Within last 4 weeks before selected date
-    var diff = (selectedDateObj - d) / (1000*60*60*24);
-    return diff > 0 && diff <= 28;
-  });
-  
-  var avg4w = function(key) {
-    if(!sameDayRows.length) return 0;
-    return sameDayRows.reduce(function(a,r){ return a + (r[key]||0); }, 0) / sameDayRows.length;
-  };
-  
-  var metrics = [
-    { label: 'Gross Revenue', key: 'GrossRevenue', fmt: 'currency' },
-    { label: 'Net Revenue', key: 'NetRevenue', fmt: 'currency' },
-    { label: 'Total Orders', key: 'TotalOrders', fmt: 'number' },
-    { label: 'AOV', key: 'AOV', fmt: 'currency2' },
-    { label: 'Dine-In Revenue', key: 'DineInRev', fmt: 'currency' },
-    { label: 'Pickup Revenue', key: 'PickupRev', fmt: 'currency' },
-    { label: 'Delivery Revenue', key: 'DeliveryRev', fmt: 'currency' },
-    { label: 'Zomato Revenue', key: 'ZomatoRev', fmt: 'currency' },
-    { label: 'Zomato Orders', key: 'ZomatoOrders', fmt: 'number' },
-    { label: 'Swiggy Revenue', key: 'SwiggyRev', fmt: 'currency' },
-    { label: 'Swiggy Orders', key: 'SwiggyOrders', fmt: 'number' },
-    { label: 'Cancelled Orders', key: 'CancelledOrders', fmt: 'number' }
-  ];
-  
-  var fmtVal = function(v, fmt) {
-    if(fmt === 'currency') return '₹'+fmtN(Math.round(v));
-    if(fmt === 'currency2') return '₹'+v.toFixed(2);
-    return fmtN(Math.round(v));
-  };
-  
-  // KPIs
-  var todayGross = selectedRow.GrossRevenue;
-  var avg4wGross = avg4w('GrossRevenue');
-  var grossDelta = avg4wGross > 0 ? ((todayGross - avg4wGross)/avg4wGross*100) : 0;
-  var todayOrd = selectedRow.TotalOrders;
-  var avg4wOrd = avg4w('TotalOrders');
-  var ordDelta = avg4wOrd > 0 ? ((todayOrd - avg4wOrd)/avg4wOrd*100) : 0;
-  
-  document.getElementById('salesDayCompareKpis').innerHTML = [
-    { l:'DAY REVENUE', v:'₹'+fmtN(todayGross), s:'4W Avg: ₹'+fmtN(Math.round(avg4wGross)), c: grossDelta>=0?'var(--grn)':'var(--red)' },
-    { l:'DAY ORDERS', v:fmtN(todayOrd), s:'4W Avg: '+Math.round(avg4wOrd)+' orders', c: ordDelta>=0?'var(--grn)':'var(--red)' },
-    { l:'PERFORMANCE', v:(grossDelta>=0?'+':'')+grossDelta.toFixed(1)+'%', s:grossDelta>=0?'Outperforming 4W avg':'Below 4W avg · '+sameDayRows.length+' same-day samples', c: grossDelta>=0?'var(--grn)':'var(--red)' }
-  ].map(function(k){
-    return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div><div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div><div class="kpi-sub">'+k.s+'</div></div>';
-  }).join('');
-  
-  // Day vs 4W Revenue Chart (grouped bar)
-  killChart('chSalesDayVs4W'); killChart('chSalesDayVs4WOrd'); killChart('chSalesSameDayTrend');
-  
-  var revMetrics = ['GrossRevenue','DineInRev','PickupRev','DeliveryRev','ZomatoRev','SwiggyRev'];
-  var revLabels = ['Gross','Dine-In','Pickup','Delivery','Zomato','Swiggy'];
-  
-  CI.chSalesDayVs4W = new Chart(document.getElementById('chartSalesDayVs4W'), {
-    type: 'bar', data: { labels: revLabels, datasets: [
-      { label: fmtDateShort(selectedDate), data: revMetrics.map(function(k){ return selectedRow[k]||0; }), backgroundColor: '#f59e0b', borderRadius: 6 },
-      { label: '4-Week Avg', data: revMetrics.map(function(k){ return avg4w(k); }), backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 6 }
-    ] },
-    options: { responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 20 } },
-      scales: { x: { grid: { display: false }, ticks: { color: '#f8fafc', font: { weight: '700' } } }, y: { grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } } },
-      plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, callbacks: { label: function(c){ return c.dataset.label+': ₹'+fmtN(c.raw); } } } }
-    }
-  });
-  
-  // Day vs 4W Orders Chart
-  var ordMetrics = ['TotalOrders','ZomatoOrders','SwiggyOrders','CancelledOrders'];
-  var ordLabels = ['Total','Zomato','Swiggy','Cancelled'];
-  
-  CI.chSalesDayVs4WOrd = new Chart(document.getElementById('chartSalesDayVs4WOrd'), {
-    type: 'bar', data: { labels: ordLabels, datasets: [
-      { label: fmtDateShort(selectedDate), data: ordMetrics.map(function(k){ return selectedRow[k]||0; }), backgroundColor: '#60a5fa', borderRadius: 6 },
-      { label: '4-Week Avg', data: ordMetrics.map(function(k){ return avg4w(k); }), backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 6 }
-    ] },
-    options: { responsive: true, maintainAspectRatio: false,
-      layout: { padding: { top: 20 } },
-      scales: { x: { grid: { display: false }, ticks: { color: '#f8fafc', font: { weight: '700' } } }, y: { grid: { color: GC } } },
-      plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT } }
-    }
-  });
-  
-  // Same Day Trend Chart (Revenue over multiple same weekdays)
-  var sameDayTrend = sameDayRows.map(function(r){ return { date: r.Date, gross: r.GrossRevenue, orders: r.TotalOrders }; });
-  sameDayTrend.push({ date: selectedDate, gross: selectedRow.GrossRevenue, orders: selectedRow.TotalOrders });
-  sameDayTrend.sort(function(a,b){ return a.date.localeCompare(b.date); });
-  
-  document.getElementById('salesSameDayTrendTitle').textContent = (dayName||'Same Weekday') + ' Revenue Trend (Historical)';
-  
-  CI.chSalesSameDayTrend = new Chart(document.getElementById('chartSalesSameDayTrend'), {
-    type: 'line', data: { labels: sameDayTrend.map(function(d){ return fmtDateShort(d.date); }),
-      datasets: [
-        { label: 'Revenue', data: sameDayTrend.map(function(d){ return d.gross; }), borderColor: '#f59e0b', backgroundColor: 'rgba(245,158,11,0.1)', fill: true, tension: 0.4, borderWidth: 3, pointRadius: 6, pointBackgroundColor: sameDayTrend.map(function(d){ return d.date===selectedDate?'#f59e0b':'#fff'; }) },
-        { label: '4W Avg', data: sameDayTrend.map(function(){ return avg4wGross; }), borderColor: 'rgba(255,255,255,0.3)', borderDash: [6,4], borderWidth: 2, pointRadius: 0, fill: false }
-      ]
-    },
-    options: { responsive: true, maintainAspectRatio: false,
-      scales: { x: { grid: { display: false } }, y: { grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } } },
-      plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, callbacks: { label: function(c){ return c.dataset.label+': ₹'+fmtN(c.raw); } } } }
-    }
-  });
-  
-  // Detail Comparison Table
-  var tblBody = document.getElementById('salesDayCompareTableBody');
-  if(tblBody) {
-    tblBody.innerHTML = metrics.map(function(m) {
-      var today = selectedRow[m.key] || 0;
-      var avgVal = avg4w(m.key);
-      var variance = today - avgVal;
-      var pctChange = avgVal > 0 ? ((variance/avgVal)*100) : 0;
-      var isGood = m.key === 'CancelledOrders' ? variance <= 0 : variance >= 0;
-      var statusTag = isGood ? '<span class="tag tag-g">✓ Good</span>' : '<span class="tag tag-r">⚠ Below</span>';
-      if(Math.abs(pctChange) < 2) statusTag = '<span class="tag tag-a">— Neutral</span>';
-      
-      return '<tr>'
-        +'<td style="color:var(--txt);font-weight:600">'+m.label+'</td>'
-        +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#f59e0b;font-weight:700">'+fmtVal(today,m.fmt)+'</td>'
-        +'<td class="num" style="font-family:\'DM Mono\',monospace;color:var(--m1)">'+fmtVal(avgVal,m.fmt)+'</td>'
-        +'<td class="num" style="font-family:\'DM Mono\',monospace;color:'+(isGood?'var(--grn)':'var(--red)')+'">'+(variance>=0?'+':'')+fmtVal(Math.abs(variance),m.fmt.indexOf('currency')!==-1?'currency':'number')+'</td>'
-        +'<td class="num" style="color:'+(isGood?'var(--grn)':'var(--red)')+';font-weight:700">'+(pctChange>=0?'+':'')+pctChange.toFixed(1)+'%</td>'
-        +'<td class="num">'+statusTag+'</td>'
-        +'</tr>';
-    }).join('');
-  }
-};
-
-// ── Slot Analysis Builder ──
-function buildSlotAnalysis(filteredData, sortedDates, dailyLabels, slotNames, slotColors, slotRevSeries, slotOrdSeries, allData) {
-  // Slot-wise Revenue Trend (Stacked)
-  var chSlotTrend = document.getElementById('chartSalesSlotTrend');
-  if(chSlotTrend) {
-    CI.chSalesSlotTrend = new Chart(chSlotTrend, {
-      type: 'bar', data: { labels: dailyLabels, datasets: slotNames.map(function(s,i){
-        return { label: s.split(' ')[0], data: slotRevSeries[s], backgroundColor: slotColors[i], borderRadius: 2 };
-      }) },
-      options: { responsive: true, maintainAspectRatio: false,
-        scales: { x: { stacked: true, grid: { color: GC }, ticks: { maxTicksLimit: 12 } }, y: { stacked: true, grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } } },
-        plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, mode: 'index', intersect: false, callbacks: { label: function(c){ return c.dataset.label+': ₹'+fmtN(c.raw); } } } }
-      }
-    });
-  }
-
-  // Slot-wise Orders Trend
-  var chSlotOrd = document.getElementById('chartSalesSlotOrdTrend');
-  if(chSlotOrd) {
-    CI.chSalesSlotOrdTrend = new Chart(chSlotOrd, {
-      type: 'bar', data: { labels: dailyLabels, datasets: slotNames.map(function(s,i){
-        return { label: s.split(' ')[0], data: slotOrdSeries[s], backgroundColor: slotColors[i], borderRadius: 2 };
-      }) },
-      options: { responsive: true, maintainAspectRatio: false,
-        scales: { x: { stacked: true, grid: { color: GC }, ticks: { maxTicksLimit: 12 } }, y: { stacked: true, grid: { color: GC } } },
-        plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, mode: 'index', intersect: false } }
-      }
-    });
-  }
-
-  // Slot-wise 4W Average by DOW
-  var dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  var slot4WData = {};
-  slotNames.forEach(function(slot){ slot4WData[slot] = dowNames.map(function(){ return []; }); });
-  
-  var activeOutletId = activeSheetId ? activeSheetId.split('__')[0] : '';
-  var allSalesData = (window.SALES_SUMMARY_DATA && activeOutletId) ? window.SALES_SUMMARY_DATA[activeOutletId] : [];
-  
-  allSalesData.forEach(function(r) {
-    if(!r.Date) return;
-    var d = new Date(r.Date);
-    if(isNaN(d.getTime())) return;
-    var dowIdx = d.getDay(); // 0=Sun
-    var mappedIdx = dowIdx === 0 ? 6 : dowIdx - 1; // Mon=0 ... Sun=6
-    slotNames.forEach(function(slot) {
-      if(r.MealSlot === slot) {
-        slot4WData[slot][mappedIdx].push(r.GrossRevenue);
-      }
-    });
-  });
-  
-  var chSlot4W = document.getElementById('chartSalesSlot4WAvg');
-  if(chSlot4W) {
-    CI.chSalesSlot4WAvg = new Chart(chSlot4W, {
-      type: 'bar', data: { labels: dowNames, datasets: slotNames.map(function(slot,i){
-        return { label: slot.split(' ')[0], data: dowNames.map(function(_,di){ var arr = slot4WData[slot][di]; return arr.length ? arr.reduce(function(a,b){return a+b;},0)/arr.length : 0; }), backgroundColor: slotColors[i], borderRadius: 3 };
-      }) },
-      options: { responsive: true, maintainAspectRatio: false,
-        scales: { x: { stacked: true, grid: { display: false } }, y: { stacked: true, grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } } },
-        plugins: { legend: { labels: { color: '#94a3b8' } }, tooltip: { ...TT, mode: 'index', intersect: false, callbacks: { label: function(c){ return c.dataset.label+': ₹'+fmtN(Math.round(c.raw)); } } } }
-      }
-    });
-  }
-
-  // Slot KPI Grid
-  var slotKpiGrid = document.getElementById('salesSlotKpiGrid');
-  if(slotKpiGrid) {
-    slotKpiGrid.innerHTML = slotNames.map(function(slot, i) {
-      var slotRows = filteredData.filter(function(r){ return r.MealSlot === slot; });
-      var gross = slotRows.reduce(function(a,r){ return a+r.GrossRevenue; },0);
-      var orders = slotRows.reduce(function(a,r){ return a+r.TotalOrders; },0);
-      var avgGross = slotRows.length ? gross/slotRows.length : 0;
-      var aov = orders > 0 ? gross/orders : 0;
-      return '<div class="kpi-card" style="border-left:3px solid '+slotColors[i]+'"><div class="kpi-lbl" style="color:'+slotColors[i]+'">'+slot.split(' ')[0].toUpperCase()+'</div>'
-        +'<div class="kpi-val" style="color:'+slotColors[i]+';font-size:20px">₹'+fmtN(Math.round(gross))+'</div>'
-        +'<div class="kpi-sub">'+fmtN(orders)+' orders · AOV ₹'+aov.toFixed(0)+' · Avg/day ₹'+fmtN(Math.round(avgGross))+'</div></div>';
-    }).join('');
-  }
-
-  // Slot Matrix Table
-  var slotSummaries = buildSlotSummaries(filteredData, slotNames);
-  var matrixHtml = slotSummaries.map(function(s) {
-    var isTotal = (s.slot === "ALL DAY TOTAL");
-    var bg = isTotal ? 'background:var(--s2);font-weight:800;' : '';
-    return '<tr style="' + bg + '">'
-      + '<td style="color:' + (isTotal ? '#facc15' : 'var(--txt)') + '; font-weight:' + (isTotal ? '800' : '600') + '">' + s.slot + '</td>'
-      + '<td class="num">₹' + fmtN(s.gross) + '</td>'
-      + '<td class="num" style="color:#facc15">₹' + fmtN(s.net) + '</td>'
-      + '<td class="num">₹' + fmtN(s.dineIn) + '</td>'
-      + '<td class="num">₹' + fmtN(s.pickup) + '</td>'
-      + '<td class="num">₹' + fmtN(s.delivery) + '</td>'
-      + '<td class="num">₹' + fmtN(s.zomato) + '</td>'
-      + '<td class="num">₹' + fmtN(s.swiggy) + '</td>'
-      + '<td class="num">' + fmtN(s.orders) + '</td>'
-      + '<td class="num">₹' + s.aov.toFixed(2) + '</td>'
-      + '<td class="num" style="color:' + (s.cxl > 0 ? 'var(--red)' : 'var(--m1)') + '">' + s.cxl + '</td>'
-      + '</tr>';
-  }).join('');
-  document.getElementById('salesMatrixBody').innerHTML = matrixHtml;
-
-  // Slot-wise Daily Breakdown Table
-  var slotDailyBody = document.getElementById('salesSlotDailyTableBody');
-  if(slotDailyBody) {
-    slotDailyBody.innerHTML = sortedDates.map(function(d) {
-      var dayName = getDayNameFromDate(d);
-      var dayRows = filteredData.filter(function(r){ return r.Date === d; });
-      var bfRow = dayRows.find(function(r){ return r.MealSlot === slotNames[0]; });
-      var lnRow = dayRows.find(function(r){ return r.MealSlot === slotNames[1]; });
-      var snRow = dayRows.find(function(r){ return r.MealSlot === slotNames[2]; });
-      var dnRow = dayRows.find(function(r){ return r.MealSlot === slotNames[3]; });
-      var allRow = dayRows.find(function(r){ return r.MealSlot.toUpperCase().indexOf('ALL DAY')!==-1; });
-      
-      return '<tr>'
-        +'<td style="color:#f59e0b;font-weight:600">'+fmtDateShort(d)+'</td>'
-        +'<td style="color:var(--m1)">'+dayName+'</td>'
-        +'<td class="num">₹'+fmtN(bfRow?bfRow.GrossRevenue:0)+'</td>'
-        +'<td class="num">'+(bfRow?bfRow.TotalOrders:0)+'</td>'
-        +'<td class="num">₹'+fmtN(lnRow?lnRow.GrossRevenue:0)+'</td>'
-        +'<td class="num">'+(lnRow?lnRow.TotalOrders:0)+'</td>'
-        +'<td class="num">₹'+fmtN(snRow?snRow.GrossRevenue:0)+'</td>'
-        +'<td class="num">'+(snRow?snRow.TotalOrders:0)+'</td>'
-        +'<td class="num">₹'+fmtN(dnRow?dnRow.GrossRevenue:0)+'</td>'
-        +'<td class="num">'+(dnRow?dnRow.TotalOrders:0)+'</td>'
-        +'<td class="num" style="color:#facc15;font-weight:700">₹'+fmtN(allRow?allRow.GrossRevenue:0)+'</td>'
-        +'<td class="num" style="font-weight:700">'+(allRow?allRow.TotalOrders:0)+'</td>'
-        +'</tr>';
-    }).join('');
-  }
-}
-
-// ── Day-of-Week Summary Table ──
-function buildDowTable(kpiData, sortedDates) {
-  var el = document.getElementById('salesDowTableBody');
-  if(!el) return;
-  
-  var dowNames = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
-  var dowData = {};
-  dowNames.forEach(function(d){ dowData[d] = { gross:[], orders:[], dineIn:[], pickup:[], delivery:[] }; });
-  
-  kpiData.forEach(function(r) {
-    var dayName = getDayNameFromDate(r.Date);
-    if(dowData[dayName]) {
-      dowData[dayName].gross.push(r.GrossRevenue);
-      dowData[dayName].orders.push(r.TotalOrders);
-      dowData[dayName].dineIn.push(r.DineInRev);
-      dowData[dayName].pickup.push(r.PickupRev);
-      dowData[dayName].delivery.push(r.DeliveryRev);
-    }
-  });
-  
-  el.innerHTML = dowNames.map(function(day) {
-    var d = dowData[day];
-    var n = d.gross.length;
-    if(!n) return '';
-    var totalGross = d.gross.reduce(function(a,b){return a+b;},0);
-    var avgGross = totalGross/n;
-    var totalOrd = d.orders.reduce(function(a,b){return a+b;},0);
-    var avgOrd = totalOrd/n;
-    var aov = totalOrd > 0 ? totalGross/totalOrd : 0;
-    var avgDineIn = d.dineIn.reduce(function(a,b){return a+b;},0)/n;
-    var avgPickup = d.pickup.reduce(function(a,b){return a+b;},0)/n;
-    var avgDelivery = d.delivery.reduce(function(a,b){return a+b;},0)/n;
-    var isWeekend = day === 'Sat' || day === 'Sun';
-    
-    return '<tr style="'+(isWeekend?'background:rgba(96,165,250,0.04)':'')+'">'
-      +'<td style="color:'+(isWeekend?'#60a5fa':'var(--txt)')+';font-weight:700">'+day+(isWeekend?' 📈':'')+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#facc15;font-weight:700">₹'+fmtN(Math.round(avgGross))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">'+avgOrd.toFixed(1)+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+aov.toFixed(0)+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#22c55e">₹'+fmtN(Math.round(avgDineIn))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#3b82f6">₹'+fmtN(Math.round(avgPickup))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#a78bfa">₹'+fmtN(Math.round(avgDelivery))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(Math.round(totalGross))+'</td>'
-      +'<td class="num" style="color:var(--m1)">'+n+'</td>'
-      +'</tr>';
-  }).filter(Boolean).join('');
-}
-
-// ── Weekly Summary Table ──
-function buildWeeklyTable(kpiData, sortedDates) {
-  var el = document.getElementById('salesWeeklyTableBody');
-  if(!el) return;
-  
-  // Group by ISO week
-  var weeks = {};
-  kpiData.forEach(function(r) {
-    if(!r.Date) return;
-    var d = new Date(r.Date);
-    var weekStart = new Date(d);
-    weekStart.setDate(d.getDate() - d.getDay() + 1);
-    var weekKey = weekStart.toISOString().split('T')[0];
-    if(!weeks[weekKey]) weeks[weekKey] = { rows: [], start: weekStart, dates: [] };
-    weeks[weekKey].rows.push(r);
-    if(weeks[weekKey].dates.indexOf(r.Date) === -1) weeks[weekKey].dates.push(r.Date);
-  });
-  
-  var weekKeys = Object.keys(weeks).sort();
-  el.innerHTML = weekKeys.map(function(wk, i) {
-    var w = weeks[wk];
-    var gross = w.rows.reduce(function(a,r){ return a+r.GrossRevenue; },0);
-    var dineIn = w.rows.reduce(function(a,r){ return a+r.DineInRev; },0);
-    var pickup = w.rows.reduce(function(a,r){ return a+r.PickupRev; },0);
-    var delivery = w.rows.reduce(function(a,r){ return a+r.DeliveryRev; },0);
-    var orders = w.rows.reduce(function(a,r){ return a+r.TotalOrders; },0);
-    var cancelled = w.rows.reduce(function(a,r){ return a+r.CancelledOrders; },0);
-    var aov = orders > 0 ? gross/orders : 0;
-    var nDays = w.dates.length;
-    var avgDaily = nDays > 0 ? gross/nDays : 0;
-    
-    var wLabel = 'W'+(i+1)+' ('+fmtDateShort(w.dates[0]||wk)+' - '+fmtDateShort(w.dates[w.dates.length-1]||wk)+')';
-    
-    return '<tr>'
-      +'<td style="color:var(--txt);font-weight:600">'+wLabel+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#facc15;font-weight:700">₹'+fmtN(Math.round(gross))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#22c55e">₹'+fmtN(Math.round(dineIn))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#3b82f6">₹'+fmtN(Math.round(pickup))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace;color:#a78bfa">₹'+fmtN(Math.round(delivery))+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">'+fmtN(orders)+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+aov.toFixed(0)+'</td>'
-      +'<td class="num" style="font-family:\'DM Mono\',monospace">₹'+fmtN(Math.round(avgDaily))+'</td>'
-      +'<td class="num" style="color:'+(cancelled>0?'var(--red)':'var(--m1)')+'">'+cancelled+'</td>'
-      +'</tr>';
-  }).join('');
-}
-
-// ── Sales Log Table (Enhanced with Day column) ──
-window.renderSalesLogTable = function() {
-  var activeOutletId = activeSheetId ? activeSheetId.split('__')[0] : '';
-  if (!activeOutletId && SHEET_REGISTRY.length) activeOutletId = SHEET_REGISTRY[0].id;
-  var data = (window.SALES_SUMMARY_DATA && activeOutletId) ? window.SALES_SUMMARY_DATA[activeOutletId] : null;
-  if (!data || !data.length) return;
-
-  var monthFilter = document.getElementById('salesMonthFilter').value;
-  var slotFilter = document.getElementById('salesSlotFilter').value;
-  var searchEl = document.getElementById('salesLogSearch');
-  var searchQuery = searchEl ? searchEl.value.trim() : '';
-
-  var rows = data.filter(function(row) {
-    if (monthFilter !== 'all' && (!row.Date || row.Date.indexOf(monthFilter) !== 0)) return false;
-    
-    if (slotFilter === 'all_slots') {
-      if (row.MealSlot.toUpperCase().indexOf('ALL DAY') === -1) return false;
-    } else if (slotFilter === 'slots_split') {
-      if (row.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1) return false;
-    } else {
-      if (row.MealSlot !== slotFilter) return false;
-    }
-
-    if (searchQuery && row.Date.indexOf(searchQuery) === -1) return false;
-    return true;
-  });
-
-  rows.sort(function(a, b) { return b.Date.localeCompare(a.Date); });
-
-  var logHtml = rows.map(function(r) {
-    var isAllDay = r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
-    var bg = isAllDay ? 'background:rgba(245,158,11,0.03);' : '';
-    var dayName = getDayNameFromDate(r.Date);
-    return '<tr style="' + bg + '">'
-      + '<td style="color:#f59e0b;font-weight:600">' + fmtDateShort(r.Date) + '</td>'
-      + '<td style="color:var(--m1)">' + dayName + '</td>'
-      + '<td style="color:var(--m2)">' + r.MealSlot + '</td>'
-      + '<td class="num">₹' + fmtN(r.GrossRevenue) + '</td>'
-      + '<td class="num" style="color:#facc15">₹' + fmtN(r.NetRevenue) + '</td>'
-      + '<td class="num">₹' + fmtN(r.DineInRev) + '</td>'
-      + '<td class="num">₹' + fmtN(r.PickupRev) + '</td>'
-      + '<td class="num">₹' + fmtN(r.DeliveryRev) + '</td>'
-      + '<td class="num">₹' + fmtN(r.ZomatoRev) + ' <span style="font-size:9px;color:#64748b">(' + r.ZomatoOrders + ')</span></td>'
-      + '<td class="num">₹' + fmtN(r.SwiggyRev) + ' <span style="font-size:9px;color:#64748b">(' + r.SwiggyOrders + ')</span></td>'
-      + '<td class="num">' + fmtN(r.TotalOrders) + '</td>'
-      + '<td class="num">₹' + r.AOV.toFixed(2) + '</td>'
-      + '<td class="num" style="color:' + (r.CancelledOrders > 0 ? 'var(--red)' : 'var(--m1)') + '">' + r.CancelledOrders + '</td>'
-      + '</tr>';
-  }).join('');
-  
-  if (!logHtml) {
-    logHtml = '<tr><td colspan="13" style="text-align:center;color:var(--m1)">No matching rows found.</td></tr>';
-  }
-  document.getElementById('salesLogBody').innerHTML = logHtml;
-};
-  var activeOutletId = activeSheetId ? activeSheetId.split('__')[0] : '';
-  if (!activeOutletId && SHEET_REGISTRY.length) {
-    activeOutletId = SHEET_REGISTRY[0].id;
-  }
-  
-  var data = (window.SALES_SUMMARY_DATA && activeOutletId) ? window.SALES_SUMMARY_DATA[activeOutletId] : null;
-  if (!data || !data.length) {
-    document.getElementById('salesKpiGrid').innerHTML = '<div style="padding:20px;color:var(--m1);grid-column: span 2;">Sync "Sales summary" tab on Data Source page to view details.</div>';
-    document.getElementById('salesMatrixBody').innerHTML = '<tr><td colspan="11" style="text-align:center;color:var(--m1)">No data available. Please check sheet configuration.</td></tr>';
-    document.getElementById('salesLogBody').innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--m1)">No data available.</td></tr>';
+    var salesLogBody = document.getElementById('salesLogBody');
+    if (salesLogBody) salesLogBody.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--m1)">No data available.</td></tr>';
     return;
   }
   
@@ -2511,355 +1788,597 @@ window.renderSalesLogTable = function() {
   var overallAov = totalOrders > 0 ? (totalGross / totalOrders) : 0;
   var cancelPct = totalOrders > 0 ? (totalCancelled / totalOrders * 100) : 0;
   
-  var totalDineIn = kpiData.reduce(function(a, r){ return a + r.DineInRev; }, 0);
-  var totalPickup = kpiData.reduce(function(a, r){ return a + r.PickupRev; }, 0);
-  var totalDelivery = kpiData.reduce(function(a, r){ return a + r.DeliveryRev; }, 0);
+  var activeTab = window.activeSalesSubTab || 'overview';
   
+  // Render KPI grid
   var kpiGrid = document.getElementById('salesKpiGrid');
-  kpiGrid.innerHTML = [
-    {l:'GROSS REVENUE', v:'₹'+fmtN(totalGross), s:'Total sales before tax & packaging', c:'var(--grn)'},
-    {l:'NET REVENUE', v:'₹'+fmtN(totalNet), s:'Net Sales (Gross - Tax)', c:'#facc15'},
-    {l:'TOTAL ORDERS', v:fmtN(totalOrders), s:'Total orders placed', c:'#60a5fa'},
-    {l:'AVG ORDER VALUE', v:'₹'+overallAov.toFixed(2), s:'AOV = Gross / Orders', c:'#a78bfa'},
-    {l:'CANCELLED ORDERS', v:fmtN(totalCancelled), s:cancelPct.toFixed(1)+'% cancellation rate', c:'var(--red)'},
-    {l:'PACKAGING & TAX', v:'₹'+fmtN(totalPkg), s:'Tax subtracted: ₹'+fmtN(totalTax), c:'#38bdf8'}
-  ].map(function(k){
-    return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
-          +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
-          +'<div class="kpi-sub">'+k.s+'</div></div>';
-  }).join('');
-  
-  killChart('chSalesTrend');
-  killChart('chSalesChannelShare');
-  killChart('chSalesDeliveryComparison');
-  killChart('chSalesAovTrend');
-  killChart('chSalesSlotShare');
-  
-  var datesSet = {};
-  filteredData.forEach(function(r) { if (r.Date) datesSet[r.Date] = true; });
-  var sortedDates = Object.keys(datesSet).sort();
-  var dailyLabels = sortedDates.map(function(d) {
-    var parts = d.split('-');
-    if (parts.length < 3) return d;
-    var mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-    return parseInt(parts[2]) + ' ' + mNames[parseInt(parts[1]) - 1];
-  });
-  
-  var dailyGross = [];
-  var dailyNet = [];
-  var dailyZomatoRev = [];
-  var dailySwiggyRev = [];
-  var dailyOrders = [];
-  var dailyAov = [];
-  
-  var slotNames = ["Breakfast (7AM-12PM)", "Lunch (12PM-4PM)", "Snacks (4PM-7PM)", "Dinner (7PM+)"];
-  var slotSeries = {
-    "Breakfast (7AM-12PM)": [],
-    "Lunch (12PM-4PM)": [],
-    "Snacks (4PM-7PM)": [],
-    "Dinner (7PM+)": []
-  };
-  
-  sortedDates.forEach(function(d) {
-    var dayRows = filteredData.filter(function(r) { return r.Date === d; });
-    slotNames.forEach(function(slot) {
-      var row = dayRows.find(function(r) { return r.MealSlot === slot; });
-      slotSeries[slot].push(row ? row.GrossRevenue : 0);
-    });
-    
-    var allDayRow = dayRows.find(function(r) {
-      if (specificSlot) return r.MealSlot === specificSlot;
-      return r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
-    });
-    
-    dailyGross.push(allDayRow ? allDayRow.GrossRevenue : 0);
-    dailyNet.push(allDayRow ? allDayRow.NetRevenue : 0);
-    dailyZomatoRev.push(allDayRow ? allDayRow.ZomatoRev : 0);
-    dailySwiggyRev.push(allDayRow ? allDayRow.SwiggyRev : 0);
-    dailyOrders.push(allDayRow ? allDayRow.TotalOrders : 0);
-    dailyAov.push(allDayRow ? allDayRow.AOV : 0);
-  });
-  
-  var datasets1 = [];
-  if (slotFilter === 'slots_split') {
-    var colors = ['#f59e0b', '#60a5fa', '#a78bfa', '#f87171'];
-    datasets1 = slotNames.map(function(slot, idx) {
-      return {
-        label: slot.split(' ')[0],
-        data: slotSeries[slot],
-        backgroundColor: colors[idx],
-        borderRadius: 4
-      };
-    });
-    document.getElementById('salesTrendTitle').textContent = 'Daily Revenue by Meal Slot';
-  } else {
-    datasets1 = [
-      {
-        label: 'Gross Revenue',
-        data: dailyGross,
-        backgroundColor: 'rgba(34, 197, 94, 0.75)',
-        borderRadius: 4
-      },
-      {
-        label: 'Net Revenue (Gross-Tax)',
-        data: dailyNet,
-        backgroundColor: 'rgba(245, 158, 11, 0.75)',
-        borderRadius: 4
-      }
-    ];
-    document.getElementById('salesTrendTitle').textContent = 'Daily Revenue Trend' + (specificSlot ? ' - ' + specificSlot.split(' ')[0] : '');
+  if (kpiGrid) {
+    kpiGrid.innerHTML = [
+      {l:'GROSS REVENUE', v:'₹'+fmtN(totalGross), s:'Total sales before tax & packaging', c:'var(--grn)'},
+      {l:'NET REVENUE', v:'₹'+fmtN(totalNet), s:'Net Sales (Gross - Tax)', c:'#facc15'},
+      {l:'TOTAL ORDERS', v:fmtN(totalOrders), s:'Total orders placed', c:'#60a5fa'},
+      {l:'AVG ORDER VALUE', v:'₹'+overallAov.toFixed(2), s:'AOV = Gross / Orders', c:'#a78bfa'},
+      {l:'CANCELLED ORDERS', v:fmtN(totalCancelled), s:cancelPct.toFixed(1)+'% cancellation rate', c:'var(--red)'},
+      {l:'PACKAGING & TAX', v:'₹'+fmtN(totalPkg), s:'Tax subtracted: ₹'+fmtN(totalTax), c:'#38bdf8'}
+    ].map(function(k){
+      return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
+            +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
+            +'<div class="kpi-sub">'+k.s+'</div></div>';
+    }).join('');
   }
   
-  CI.chSalesTrend = new Chart(document.getElementById('chartSalesTrend'), {
-    type: 'bar',
-    data: { labels: dailyLabels, datasets: datasets1 },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: { grid: { color: GC }, stacked: (slotFilter === 'slots_split'), ticks: { maxTicksLimit: 10 } },
-        y: { grid: { color: GC }, stacked: (slotFilter === 'slots_split'), ticks: { callback: function(v){ return '₹'+fmtN(v); } } }
-      },
-      plugins: {
-        legend: { labels: { color: '#94a3b8' } },
-        tooltip: {
-          ...TT,
-          callbacks: {
-            label: function(c) {
-              return c.dataset.label + ': ₹' + fmtN(c.raw);
-            }
-          }
-        }
-      }
-    }
-  });
-  
-  CI.chSalesChannelShare = new Chart(document.getElementById('chartSalesChannelShare'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Dine-In', 'Pickup', 'Delivery'],
-      datasets: [{
-        data: [totalDineIn, totalPickup, totalDelivery],
-        backgroundColor: ['#22c55e', '#3b82f6', '#a78bfa'],
-        borderWidth: 0
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      cutout: '65%',
-      plugins: {
-        legend: { position: 'right', labels: { color: '#94a3b8' } },
-        tooltip: {
-          ...TT,
-          callbacks: {
-            label: function(c) {
-              var val = c.raw;
-              var total = totalDineIn + totalPickup + totalDelivery;
-              var pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
-              return c.label + ': ₹' + fmtN(val) + ' (' + pct + '%)';
-            }
-          }
-        }
-      }
-    }
-  });
-  
-  CI.chSalesDeliveryComparison = new Chart(document.getElementById('chartSalesDeliveryComparison'), {
-    type: 'bar',
-    data: {
-      labels: dailyLabels,
-      datasets: [
-        {
-          label: 'Zomato Rev',
-          data: dailyZomatoRev,
-          backgroundColor: '#ef4444',
-          borderRadius: 4
-        },
-        {
-          label: 'Swiggy Rev',
-          data: dailySwiggyRev,
-          backgroundColor: '#f59e0b',
-          borderRadius: 4
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: { grid: { color: GC }, ticks: { maxTicksLimit: 10 } },
-        y: { grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } }
-      },
-      plugins: {
-        legend: { labels: { color: '#94a3b8' } },
-        tooltip: {
-          ...TT,
-          callbacks: {
-            label: function(c) {
-              return c.dataset.label + ': ₹' + fmtN(c.raw);
-            }
-          }
-        }
-      }
-    }
-  });
-  
-  CI.chSalesAovTrend = new Chart(document.getElementById('chartSalesAovTrend'), {
-    type: 'bar',
-    data: {
-      labels: dailyLabels,
-      datasets: [
-        {
-          label: 'Orders',
-          type: 'bar',
-          data: dailyOrders,
-          backgroundColor: '#3b82f6',
-          yAxisID: 'yOrders',
-          borderRadius: 4
-        },
-        {
-          label: 'AOV',
-          type: 'line',
-          data: dailyAov,
-          borderColor: '#a78bfa',
-          backgroundColor: 'transparent',
-          borderWidth: 2.5,
-          tension: 0.4,
-          pointRadius: 3,
-          yAxisID: 'yAov'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: { grid: { color: GC }, ticks: { maxTicksLimit: 10 } },
-        yOrders: {
-          type: 'linear',
-          position: 'left',
-          grid: { color: GC },
-          ticks: { color: '#3b82f6' },
-          title: { display: true, text: 'Orders Count', color: '#3b82f6' }
-        },
-        yAov: {
-          type: 'linear',
-          position: 'right',
-          grid: { drawOnChartArea: false },
-          ticks: { color: '#a78bfa', callback: function(v){ return '₹'+fmtN(v); } },
-          title: { display: true, text: 'Average Order Value (₹)', color: '#a78bfa' }
-        }
-      },
-      plugins: {
-        legend: { labels: { color: '#94a3b8' } },
-        tooltip: {
-          ...TT,
-          callbacks: {
-            label: function(c) {
-              if (c.dataset.label === 'AOV') return 'AOV: ₹' + c.raw.toFixed(2);
-              return 'Orders: ' + c.raw;
-            }
-          }
-        }
-      }
-    }
-  });
-  
-  var slotSummaries = slotNames.concat(["ALL DAY TOTAL"]).map(function(slot) {
-    var slotRows = filteredData.filter(function(r) { return r.MealSlot === slot; });
-    var gross = slotRows.reduce(function(a, r){ return a + r.GrossRevenue; }, 0);
-    var net = slotRows.reduce(function(a, r){ return a + r.NetRevenue; }, 0);
-    var tax = slotRows.reduce(function(a, r){ return a + r.TotalTax; }, 0);
-    var dineIn = slotRows.reduce(function(a, r){ return a + r.DineInRev; }, 0);
-    var pickup = slotRows.reduce(function(a, r){ return a + r.PickupRev; }, 0);
-    var delivery = slotRows.reduce(function(a, r){ return a + r.DeliveryRev; }, 0);
-    var zomato = slotRows.reduce(function(a, r){ return a + r.ZomatoRev; }, 0);
-    var swiggy = slotRows.reduce(function(a, r){ return a + r.SwiggyRev; }, 0);
-    var orders = slotRows.reduce(function(a, r){ return a + r.TotalOrders; }, 0);
-    var cxl = slotRows.reduce(function(a, r){ return a + r.CancelledOrders; }, 0);
-    var aov = orders > 0 ? (gross / orders) : 0;
+  // Render LFL Growth Grid on Overview
+  var growthGrid = document.getElementById('salesGrowthGrid');
+  if (growthGrid) {
+    var momData = getCompareData(data, selectedMonth, 1);
+    var yoyData = getCompareData(data, selectedMonth, 12);
     
-    return {
-      slot: slot,
-      gross: gross,
-      net: net,
-      tax: tax,
-      dineIn: dineIn,
-      pickup: pickup,
-      delivery: delivery,
-      zomato: zomato,
-      swiggy: swiggy,
-      orders: orders,
-      cxl: cxl,
-      aov: aov
+    var renderGrowthCard = function(title, gData) {
+      if (!gData) {
+        return '<div style="background:var(--s2); border:1px solid var(--b1); border-radius:12px; padding:16px; text-align:center; color:var(--m1); font-size:11px">'
+          + '<div style="font-weight:800; text-transform:uppercase; margin-bottom:8px">' + title + '</div>'
+          + 'No historical baseline data found.'
+          + '</div>';
+      }
+      
+      var sssgColor = gData.sssg >= 0 ? 'var(--grn)' : 'var(--red)';
+      var sstgColor = gData.sstg >= 0 ? 'var(--grn)' : 'var(--red)';
+      var sssgSign = gData.sssg >= 0 ? '+' : '';
+      var sstgSign = gData.sstg >= 0 ? '+' : '';
+      
+      return '<div style="background:var(--s2); border:1px solid var(--b1); border-radius:12px; padding:16px">'
+        + '<div style="font-size:11px; font-weight:800; color:var(--m1); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:12px">LFL Growth vs ' + gData.targetMonthLabel + '</div>'
+        + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">'
+        + '  <span style="font-size:12px; color:var(--m2)">SSSG (Sales Growth)</span>'
+        + '  <span style="font-size:14px; font-weight:800; color:' + sssgColor + '">' + sssgSign + gData.sssg.toFixed(1) + '%</span>'
+        + '</div>'
+        + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">'
+        + '  <span style="font-size:12px; color:var(--m2)">SSTG (Orders Growth)</span>'
+        + '  <span style="font-size:14px; font-weight:800; color:' + sstgColor + '">' + sstgSign + gData.sstg.toFixed(1) + '%</span>'
+        + '</div>'
+        + '<div style="font-size:9px; color:var(--m1); margin-top:10px; border-top:1px solid var(--b1); padding-top:6px">Matched Day Range: Days 1-' + gData.daysCompared + '</div>'
+        + '</div>';
     };
-  });
-  
-  var matrixHtml = slotSummaries.map(function(s) {
-    var isTotal = (s.slot === "ALL DAY TOTAL");
-    var bg = isTotal ? 'background:var(--s2);font-weight:800;' : '';
-    return '<tr style="' + bg + '">'
-      + '<td style="color:' + (isTotal ? '#facc15' : 'var(--txt)') + '; font-weight:' + (isTotal ? '800' : '600') + '">' + s.slot + '</td>'
-      + '<td class="num">₹' + fmtN(s.gross) + '</td>'
-      + '<td class="num" style="color:#facc15">₹' + fmtN(s.net) + '</td>'
-      + '<td class="num">₹' + fmtN(s.dineIn) + '</td>'
-      + '<td class="num">₹' + fmtN(s.pickup) + '</td>'
-      + '<td class="num">₹' + fmtN(s.delivery) + '</td>'
-      + '<td class="num">₹' + fmtN(s.zomato) + '</td>'
-      + '<td class="num">₹' + fmtN(s.swiggy) + '</td>'
-      + '<td class="num">' + fmtN(s.orders) + '</td>'
-      + '<td class="num">₹' + s.aov.toFixed(2) + '</td>'
-      + '<td class="num" style="color:' + (s.cxl > 0 ? 'var(--red)' : 'var(--m1)') + '">' + s.cxl + '</td>'
-      + '</tr>';
-  }).join('');
-  document.getElementById('salesMatrixBody').innerHTML = matrixHtml;
-  
-  var slotShareCard = document.getElementById('salesSlotShareCard');
-  if (slotFilter === 'all_slots' || slotFilter === 'slots_split') {
-    slotShareCard.style.display = 'block';
     
-    var slotGrossValues = slotSummaries.filter(function(s) {
-      return s.slot !== "ALL DAY TOTAL";
-    }).map(function(s) { return s.gross; });
+    if (selectedMonth === 'all') {
+      growthGrid.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:16px; color:var(--m1); font-size:11px">Select a specific month to view growth comparisons.</div>';
+    } else {
+      growthGrid.innerHTML = renderGrowthCard('Month-over-Month (MoM)', momData) + renderGrowthCard('Year-over-Year (YoY)', yoyData);
+    }
+  }
+
+  // Populate charts/tables based on active sub-tab
+  if (activeTab === 'overview') {
+    killChart('chSalesTrend');
+    killChart('chSalesChannelShare');
     
-    var slotLabels = ["Breakfast", "Lunch", "Snacks", "Dinner"];
+    var datesSet = {};
+    filteredData.forEach(function(r) { if (r.Date) datesSet[r.Date] = true; });
+    var sortedDates = Object.keys(datesSet).sort();
+    var dailyLabels = sortedDates.map(function(d) {
+      var parts = d.split('-');
+      if (parts.length < 3) return d;
+      var mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return parseInt(parts[2]) + ' ' + mNames[parseInt(parts[1]) - 1];
+    });
     
-    CI.chSalesSlotShare = new Chart(document.getElementById('chartSalesSlotShare'), {
-      type: 'doughnut',
-      data: {
-        labels: slotLabels,
-        datasets: [{
-          data: slotGrossValues,
-          backgroundColor: ['#f59e0b', '#60a5fa', '#a78bfa', '#f87171'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '65%',
-        plugins: {
-          legend: { position: 'right', labels: { color: '#94a3b8' } },
-          tooltip: {
-            ...TT,
-            callbacks: {
-              label: function(c) {
-                var val = c.raw;
-                var total = slotGrossValues.reduce(function(a,b){return a+b;},0);
-                var pct = total > 0 ? (val / total * 100).toFixed(1) : 0;
-                return c.label + ': ₹' + fmtN(val) + ' (' + pct + '%)';
+    var dailyGross = [];
+    var dailyNet = [];
+    sortedDates.forEach(function(d) {
+      var dayRows = filteredData.filter(function(r) { return r.Date === d; });
+      var allDayRow = dayRows.find(function(r) {
+        return r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
+      });
+      dailyGross.push(allDayRow ? allDayRow.GrossRevenue : 0);
+      dailyNet.push(allDayRow ? allDayRow.NetRevenue : 0);
+    });
+    
+    var canvasTrend = document.getElementById('chartSalesTrend');
+    if (canvasTrend) {
+      CI.chSalesTrend = new Chart(canvasTrend, {
+        type: 'bar',
+        data: {
+          labels: dailyLabels,
+          datasets: [
+            { label: 'Gross Revenue', data: dailyGross, backgroundColor: 'rgba(34, 197, 94, 0.75)', borderRadius: 4 },
+            { label: 'Net Revenue', data: dailyNet, backgroundColor: 'rgba(245, 158, 11, 0.75)', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: GC }, ticks: { maxTicksLimit: 10 } },
+            y: { grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } }
+          },
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } },
+            tooltip: {
+              ...TT,
+              callbacks: {
+                label: function(c) { return c.dataset.label + ': ₹' + fmtN(c.raw); }
               }
             }
           }
         }
-      }
+      });
+    }
+    
+    var totalDineIn = kpiData.reduce(function(a, r){ return a + r.DineInRev; }, 0);
+    var totalPickup = kpiData.reduce(function(a, r){ return a + r.PickupRev; }, 0);
+    var totalDelivery = kpiData.reduce(function(a, r){ return a + r.DeliveryRev; }, 0);
+    
+    var canvasShare = document.getElementById('chartSalesChannelShare');
+    if (canvasShare) {
+      CI.chSalesChannelShare = new Chart(canvasShare, {
+        type: 'doughnut',
+        data: {
+          labels: ['Dine-In', 'Pickup', 'Delivery'],
+          datasets: [{
+            data: [totalDineIn, totalPickup, totalDelivery],
+            backgroundColor: ['#22c55e', '#3b82f6', '#a78bfa'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { position: 'right', labels: { color: '#94a3b8' } },
+            tooltip: {
+              ...TT,
+              callbacks: {
+                label: function(c) {
+                  var total = totalDineIn + totalPickup + totalDelivery;
+                  var pct = total > 0 ? (c.raw / total * 100).toFixed(1) : 0;
+                  return c.label + ': ₹' + fmtN(c.raw) + ' (' + pct + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+  } else if (activeTab === 'channels') {
+    var totalDineIn = kpiData.reduce(function(a, r){ return a + r.DineInRev; }, 0);
+    var totalPickup = kpiData.reduce(function(a, r){ return a + r.PickupRev; }, 0);
+    var totalDelivery = kpiData.reduce(function(a, r){ return a + r.DeliveryRev; }, 0);
+    var totalZomato = kpiData.reduce(function(a, r){ return a + r.ZomatoRev; }, 0);
+    var totalSwiggy = kpiData.reduce(function(a, r){ return a + r.SwiggyRev; }, 0);
+    var totalZomatoOrders = kpiData.reduce(function(a, r){ return a + r.ZomatoOrders; }, 0);
+    var totalSwiggyOrders = kpiData.reduce(function(a, r){ return a + r.SwiggyOrders; }, 0);
+    var totalDeliveryOrders = totalZomatoOrders + totalSwiggyOrders;
+    var avgDeliveryAov = totalDeliveryOrders > 0 ? (totalDelivery / totalDeliveryOrders) : 0;
+    
+    var channelKpis = document.getElementById('salesChannelKpis');
+    if (channelKpis) {
+      channelKpis.innerHTML = [
+        {l:'DINE-IN REVENUE', v:'₹'+fmtN(totalDineIn), s:'Direct walk-in tables', c:'#22c55e'},
+        {l:'PICKUP / TAKEAWAY', v:'₹'+fmtN(totalPickup), s:'Self pick-up orders', c:'#3b82f6'},
+        {l:'DELIVERY (TOTAL)', v:'₹'+fmtN(totalDelivery), s:'Avg Delivery AOV: ₹'+avgDeliveryAov.toFixed(1), c:'#a78bfa'},
+        {l:'ZOMATO PARTNER', v:'₹'+fmtN(totalZomato), s:fmtN(totalZomatoOrders)+' orders placed', c:'#ef4444'},
+        {l:'SWIGGY PARTNER', v:'₹'+fmtN(totalSwiggy), s:fmtN(totalSwiggyOrders)+' orders placed', c:'#f59e0b'}
+      ].map(function(k){
+        return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
+              +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
+              +'<div class="kpi-sub">'+k.s+'</div></div>';
+      }).join('');
+    }
+    
+    var datesSet = {};
+    filteredData.forEach(function(r) { if (r.Date) datesSet[r.Date] = true; });
+    var sortedDates = Object.keys(datesSet).sort();
+    var dailyLabels = sortedDates.map(function(d) {
+      var parts = d.split('-');
+      if (parts.length < 3) return d;
+      var mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return parseInt(parts[2]) + ' ' + mNames[parseInt(parts[1]) - 1];
     });
-  } else {
-    slotShareCard.style.display = 'none';
+
+    // Zomato vs Swiggy Comparison Chart
+    killChart('chSalesDeliveryComparison');
+    var dailyZomatoRev = [];
+    var dailySwiggyRev = [];
+    sortedDates.forEach(function(d) {
+      var row = filteredData.find(function(r) {
+        return r.Date === d && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
+      });
+      dailyZomatoRev.push(row ? row.ZomatoRev : 0);
+      dailySwiggyRev.push(row ? row.SwiggyRev : 0);
+    });
+    
+    var canvasDel = document.getElementById('chartSalesDeliveryComparison');
+    if (canvasDel) {
+      CI.chSalesDeliveryComparison = new Chart(canvasDel, {
+        type: 'bar',
+        data: {
+          labels: dailyLabels,
+          datasets: [
+            { label: 'Zomato Rev', data: dailyZomatoRev, backgroundColor: '#ef4444', borderRadius: 4 },
+            { label: 'Swiggy Rev', data: dailySwiggyRev, backgroundColor: '#f59e0b', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: GC }, ticks: { maxTicksLimit: 10 } },
+            y: { grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } }
+          },
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } },
+            tooltip: {
+              ...TT,
+              callbacks: {
+                label: function(c) { return c.dataset.label + ': ₹' + fmtN(c.raw); }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // AOV & Orders Trend Chart
+    killChart('chSalesAovTrend');
+    var dailyOrders = [];
+    var dailyAov = [];
+    sortedDates.forEach(function(d) {
+      var row = filteredData.find(function(r) {
+        return r.Date === d && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
+      });
+      dailyOrders.push(row ? row.TotalOrders : 0);
+      dailyAov.push(row ? row.AOV : 0);
+    });
+    
+    var canvasAov = document.getElementById('chartSalesAovTrend');
+    if (canvasAov) {
+      CI.chSalesAovTrend = new Chart(canvasAov, {
+        type: 'bar',
+        data: {
+          labels: dailyLabels,
+          datasets: [
+            { label: 'Orders', type: 'bar', data: dailyOrders, backgroundColor: '#3b82f6', yAxisID: 'yOrders', borderRadius: 4 },
+            { label: 'AOV', type: 'line', data: dailyAov, borderColor: '#a78bfa', backgroundColor: 'transparent', borderWidth: 2.5, tension: 0.4, pointRadius: 3, yAxisID: 'yAov' }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: GC }, ticks: { maxTicksLimit: 10 } },
+            yOrders: { type: 'linear', position: 'left', grid: { color: GC }, ticks: { color: '#3b82f6' }, title: { display: true, text: 'Orders Count', color: '#3b82f6' } },
+            yAov: { type: 'linear', position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#a78bfa', callback: function(v){ return '₹'+fmtN(v); } }, title: { display: true, text: 'Average Order Value (₹)', color: '#a78bfa' } }
+          },
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } },
+            tooltip: {
+              ...TT,
+              callbacks: {
+                label: function(c) {
+                  if (c.dataset.label === 'AOV') return 'AOV: ₹' + c.raw.toFixed(2);
+                  return 'Orders: ' + c.raw;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Channel Summary Table
+    var chSummaryBody = document.getElementById('salesChannelSummaryBody');
+    if (chSummaryBody) {
+      var totalRev = totalDineIn + totalPickup + totalDelivery;
+      var channelsList = [
+        { name: 'Dine-In', rev: totalDineIn, ord: totalOrders - totalZomatoOrders - totalSwiggyOrders, aov: (totalOrders - totalZomatoOrders - totalSwiggyOrders) > 0 ? (totalDineIn / (totalOrders - totalZomatoOrders - totalSwiggyOrders)) : 0 },
+        { name: 'Pickup/Takeaway', rev: totalPickup, ord: 0, aov: 0 },
+        { name: 'Zomato Delivery', rev: totalZomato, ord: totalZomatoOrders, aov: totalZomatoOrders > 0 ? (totalZomato / totalZomatoOrders) : 0 },
+        { name: 'Swiggy Delivery', rev: totalSwiggy, ord: totalSwiggyOrders, aov: totalSwiggyOrders > 0 ? (totalSwiggy / totalSwiggyOrders) : 0 }
+      ];
+      
+      chSummaryBody.innerHTML = channelsList.map(function(ch) {
+        var share = totalRev > 0 ? (ch.rev / totalRev * 100).toFixed(1) : '0.0';
+        return '<tr>'
+          + '<td style="font-weight:600">' + ch.name + '</td>'
+          + '<td class="num">₹' + fmtN(ch.rev) + '</td>'
+          + '<td class="num">' + share + '%</td>'
+          + '<td class="num">' + (ch.ord > 0 ? fmtN(ch.ord) : '—') + '</td>'
+          + '<td class="num">' + (ch.aov > 0 ? '₹' + ch.aov.toFixed(1) : '—') + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+  } else if (activeTab === 'daycompare') {
+    var weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    
+    var curWeekdayAverages = weekdays.map(function(day) {
+      var dayRows = kpiData.filter(function(r) {
+        return r.Date && getDayNameFromDate(r.Date) === day;
+      });
+      var sumRev = dayRows.reduce(function(a, r) { return a + r.GrossRevenue; }, 0);
+      var sumOrd = dayRows.reduce(function(a, r) { return a + r.TotalOrders; }, 0);
+      return {
+        day: day,
+        rev: dayRows.length > 0 ? sumRev / dayRows.length : 0,
+        ord: dayRows.length > 0 ? sumOrd / dayRows.length : 0,
+        count: dayRows.length
+      };
+    });
+    
+    var baselineAverages = weekdays.map(function(day) {
+      var base = getWeekdayBaseline(data, day, selectedMonth);
+      return { day: day, rev: base.rev, ord: base.ord };
+    });
+    
+    // Revenue Comparison Chart
+    killChart('chSalesDayVs4W');
+    var canvasDayRev = document.getElementById('chartSalesDayVs4W');
+    if (canvasDayRev) {
+      CI.chSalesDayVs4W = new Chart(canvasDayRev, {
+        type: 'bar',
+        data: {
+          labels: weekdays,
+          datasets: [
+            { label: 'This Month Average', data: curWeekdayAverages.map(function(d) { return d.rev; }), backgroundColor: 'rgba(59, 130, 246, 0.85)', borderRadius: 4 },
+            { label: '4-Week Historical Average', data: baselineAverages.map(function(d) { return d.rev; }), backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: GC } },
+            y: { grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } }
+          },
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } },
+            tooltip: {
+              ...TT,
+              callbacks: {
+                label: function(c) { return c.dataset.label + ': ₹' + fmtN(c.raw); }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Orders Comparison Chart
+    killChart('chSalesDayVs4WOrd');
+    var canvasDayOrd = document.getElementById('chartSalesDayVs4WOrd');
+    if (canvasDayOrd) {
+      CI.chSalesDayVs4WOrd = new Chart(canvasDayOrd, {
+        type: 'bar',
+        data: {
+          labels: weekdays,
+          datasets: [
+            { label: 'This Month Avg Orders', data: curWeekdayAverages.map(function(d) { return d.ord; }), backgroundColor: 'rgba(167, 139, 250, 0.85)', borderRadius: 4 },
+            { label: '4-Week Historical Avg Orders', data: baselineAverages.map(function(d) { return d.ord; }), backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 4 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { x: { grid: { color: GC } }, y: { grid: { color: GC } } },
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } },
+            tooltip: { ...TT }
+          }
+        }
+      });
+    }
+    
+    // Populate comparative table
+    var compareBody = document.getElementById('salesDayCompareBody');
+    if (compareBody) {
+      compareBody.innerHTML = weekdays.map(function(day, idx) {
+        var cur = curWeekdayAverages[idx];
+        var base = baselineAverages[idx];
+        var revDelta = cur.rev - base.rev;
+        var revPct = base.rev > 0 ? (revDelta / base.rev * 100) : 0;
+        var ordDelta = cur.ord - base.ord;
+        var ordPct = base.ord > 0 ? (ordDelta / base.ord * 100) : 0;
+        
+        var revDeltaHtml = revDelta >= 0 
+          ? '<span style="color:var(--grn); font-weight:700">+' + revPct.toFixed(1) + '% (+₹' + fmtN(revDelta) + ')</span>'
+          : '<span style="color:var(--red); font-weight:700">' + revPct.toFixed(1) + '% (-₹' + fmtN(Math.abs(revDelta)) + ')</span>';
+          
+        var ordDeltaHtml = ordDelta >= 0
+          ? '<span style="color:var(--grn); font-weight:700">+' + ordPct.toFixed(1) + '% (+' + ordDelta.toFixed(1) + ')</span>'
+          : '<span style="color:var(--red); font-weight:700">' + ordPct.toFixed(1) + '% (-' + Math.abs(ordDelta).toFixed(1) + ')</span>';
+          
+        return '<tr>'
+          + '<td style="font-weight:600">' + day + ' <span style="font-size:10px; color:var(--m1)">(' + cur.count + 'd)</span></td>'
+          + '<td class="num">₹' + fmtN(cur.rev) + '</td>'
+          + '<td class="num">₹' + fmtN(base.rev) + '</td>'
+          + '<td class="num">' + revDeltaHtml + '</td>'
+          + '<td class="num">' + cur.ord.toFixed(1) + '</td>'
+          + '<td class="num">' + base.ord.toFixed(1) + '</td>'
+          + '<td class="num">' + ordDeltaHtml + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+  } else if (activeTab === 'slots') {
+    var slotNames = ["Breakfast (7AM-12PM)", "Lunch (12PM-4PM)", "Snacks (4PM-7PM)", "Dinner (7PM+)"];
+    
+    var slotSummaries = slotNames.map(function(slot) {
+      var slotRows = filteredData.filter(function(r) { return r.MealSlot === slot; });
+      var gross = slotRows.reduce(function(a, r){ return a + r.GrossRevenue; }, 0);
+      var net = slotRows.reduce(function(a, r){ return a + r.NetRevenue; }, 0);
+      var tax = slotRows.reduce(function(a, r){ return a + r.TotalTax; }, 0);
+      var dineIn = slotRows.reduce(function(a, r){ return a + r.DineInRev; }, 0);
+      var pickup = slotRows.reduce(function(a, r){ return a + r.PickupRev; }, 0);
+      var delivery = slotRows.reduce(function(a, r){ return a + r.DeliveryRev; }, 0);
+      var zomato = slotRows.reduce(function(a, r){ return a + r.ZomatoRev; }, 0);
+      var swiggy = slotRows.reduce(function(a, r){ return a + r.SwiggyRev; }, 0);
+      var orders = slotRows.reduce(function(a, r){ return a + r.TotalOrders; }, 0);
+      var cxl = slotRows.reduce(function(a, r){ return a + r.CancelledOrders; }, 0);
+      var aov = orders > 0 ? (gross / orders) : 0;
+      
+      return {
+        slot: slot, gross: gross, net: net, tax: tax, dineIn: dineIn, pickup: pickup,
+        delivery: delivery, zomato: zomato, swiggy: swiggy, orders: orders, cxl: cxl, aov: aov
+      };
+    });
+    
+    var totalSlotGross = slotSummaries.reduce(function(a, r) { return a + r.gross; }, 0);
+    
+    // Render Meal Slot Mix Doughnut Chart
+    killChart('chSalesSlotShare');
+    var canvasSlotShare = document.getElementById('chartSalesSlotShare');
+    if (canvasSlotShare) {
+      CI.chSalesSlotShare = new Chart(canvasSlotShare, {
+        type: 'doughnut',
+        data: {
+          labels: slotNames.map(function(s) { return s.split(' ')[0]; }),
+          datasets: [{
+            data: slotSummaries.map(function(s) { return s.gross; }),
+            backgroundColor: ['#f59e0b', '#60a5fa', '#a78bfa', '#f87171'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          cutout: '65%',
+          plugins: {
+            legend: { position: 'right', labels: { color: '#94a3b8' } },
+            tooltip: {
+              ...TT,
+              callbacks: {
+                label: function(c) {
+                  var total = totalSlotGross;
+                  var pct = total > 0 ? (c.raw / total * 100).toFixed(1) : 0;
+                  return c.label + ': ₹' + fmtN(c.raw) + ' (' + pct + '%)';
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Populate Operations summary table
+    var slotSummaryBody = document.getElementById('salesSlotSummaryBodyOnly');
+    if (slotSummaryBody) {
+      slotSummaryBody.innerHTML = slotSummaries.map(function(s) {
+        return '<tr>'
+          + '<td style="font-weight:600">' + s.slot.split(' ')[0] + '</td>'
+          + '<td class="num">₹' + fmtN(s.gross) + '</td>'
+          + '<td class="num" style="color:#facc15">₹' + fmtN(s.net) + '</td>'
+          + '<td class="num">' + fmtN(s.orders) + '</td>'
+          + '<td class="num">₹' + s.aov.toFixed(1) + '</td>'
+          + '</tr>';
+      }).join('');
+    }
+    
+    // Daily Meal Slot Revenue trend Chart
+    killChart('chSalesSlotTrend');
+    var datesSet = {};
+    filteredData.forEach(function(r) { if (r.Date) datesSet[r.Date] = true; });
+    var sortedDates = Object.keys(datesSet).sort();
+    var dailyLabels = sortedDates.map(function(d) {
+      var parts = d.split('-');
+      if (parts.length < 3) return d;
+      var mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      return parseInt(parts[2]) + ' ' + mNames[parseInt(parts[1]) - 1];
+    });
+
+    var slotSeries = {
+      "Breakfast (7AM-12PM)": [],
+      "Lunch (12PM-4PM)": [],
+      "Snacks (4PM-7PM)": [],
+      "Dinner (7PM+)": []
+    };
+    sortedDates.forEach(function(d) {
+      var dayRows = filteredData.filter(function(r) { return r.Date === d; });
+      slotNames.forEach(function(slot) {
+        var row = dayRows.find(function(r) { return r.MealSlot === slot; });
+        slotSeries[slot].push(row ? row.GrossRevenue : 0);
+      });
+    });
+    
+    var canvasSlotTrend = document.getElementById('chartSalesSlotTrend');
+    if (canvasSlotTrend) {
+      var colors = ['#f59e0b', '#60a5fa', '#a78bfa', '#f87171'];
+      CI.chSalesSlotTrend = new Chart(canvasSlotTrend, {
+        type: 'bar',
+        data: {
+          labels: dailyLabels,
+          datasets: slotNames.map(function(slot, idx) {
+            return {
+              label: slot.split(' ')[0],
+              data: slotSeries[slot],
+              backgroundColor: colors[idx],
+              borderRadius: 4
+            };
+          })
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            x: { grid: { color: GC }, stacked: true, ticks: { maxTicksLimit: 10 } },
+            y: { grid: { color: GC }, stacked: true, ticks: { callback: function(v){ return '₹'+fmtN(v); } } }
+          },
+          plugins: {
+            legend: { labels: { color: '#94a3b8' } },
+            tooltip: {
+              ...TT,
+              callbacks: {
+                label: function(c) { return c.dataset.label + ': ₹' + fmtN(c.raw); }
+              }
+            }
+          }
+        }
+      });
+    }
+    
+    // Renders Slot Operations Matrix
+    var matrixBody = document.getElementById('salesMatrixBodySlots');
+    if (matrixBody) {
+      var allDayRows = filteredData.filter(function(r) {
+        return r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
+      });
+      var totGross = allDayRows.reduce(function(a, r){ return a + r.GrossRevenue; }, 0);
+      var totNet = allDayRows.reduce(function(a, r){ return a + r.NetRevenue; }, 0);
+      var totDine = allDayRows.reduce(function(a, r){ return a + r.DineInRev; }, 0);
+      var totPick = allDayRows.reduce(function(a, r){ return a + r.PickupRev; }, 0);
+      var totDel = allDayRows.reduce(function(a, r){ return a + r.DeliveryRev; }, 0);
+      var totZom = allDayRows.reduce(function(a, r){ return a + r.ZomatoRev; }, 0);
+      var totSwi = allDayRows.reduce(function(a, r){ return a + r.SwiggyRev; }, 0);
+      var totOrds = allDayRows.reduce(function(a, r){ return a + r.TotalOrders; }, 0);
+      var totCxl = allDayRows.reduce(function(a, r){ return a + r.CancelledOrders; }, 0);
+      var totAov = totOrds > 0 ? (totGross / totOrds) : 0;
+      
+      var matrixRowsHtml = slotSummaries.map(function(s) {
+        return '<tr>'
+          + '<td style="font-weight:600">' + s.slot + '</td>'
+          + '<td class="num">₹' + fmtN(s.gross) + '</td>'
+          + '<td class="num" style="color:#facc15">₹' + fmtN(s.net) + '</td>'
+          + '<td class="num">₹' + fmtN(s.dineIn) + '</td>'
+          + '<td class="num">₹' + fmtN(s.pickup) + '</td>'
+          + '<td class="num">₹' + fmtN(s.delivery) + '</td>'
+          + '<td class="num">₹' + fmtN(s.zomato) + '</td>'
+          + '<td class="num">₹' + fmtN(s.swiggy) + '</td>'
+          + '<td class="num">' + fmtN(s.orders) + '</td>'
+          + '<td class="num">₹' + s.aov.toFixed(1) + '</td>'
+          + '<td class="num" style="color:' + (s.cxl > 0 ? 'var(--red)' : 'var(--m1)') + '">' + s.cxl + '</td>'
+          + '</tr>';
+      }).join('');
+      
+      // Append Total row
+      matrixRowsHtml += '<tr style="background:var(--s2); font-weight:800">'
+        + '<td style="color:#facc15">ALL DAY TOTAL</td>'
+        + '<td class="num">₹' + fmtN(totGross) + '</td>'
+        + '<td class="num" style="color:#facc15">₹' + fmtN(totNet) + '</td>'
+        + '<td class="num">₹' + fmtN(totDine) + '</td>'
+        + '<td class="num">₹' + fmtN(totPick) + '</td>'
+        + '<td class="num">₹' + fmtN(totDel) + '</td>'
+        + '<td class="num">₹' + fmtN(totZom) + '</td>'
+        + '<td class="num">₹' + fmtN(totSwi) + '</td>'
+        + '<td class="num">' + fmtN(totOrds) + '</td>'
+        + '<td class="num">₹' + totAov.toFixed(1) + '</td>'
+        + '<td class="num" style="color:' + (totCxl > 0 ? 'var(--red)' : 'var(--m1)') + '">' + totCxl + '</td>'
+        + '</tr>';
+        
+      matrixBody.innerHTML = matrixRowsHtml;
+    }
+  } else if (activeTab === 'datatables') {
+    renderSalesLogTable();
   }
-  
-  renderSalesLogTable();
 }
 
 window.renderSalesLogTable = function() {
@@ -2870,15 +2389,17 @@ window.renderSalesLogTable = function() {
 
   var monthFilter = document.getElementById('salesMonthFilter').value;
   var slotFilter = document.getElementById('salesSlotFilter').value;
-  var searchQuery = document.getElementById('salesLogSearch').value.trim();
+  var searchEl = document.getElementById('salesLogSearch');
+  var searchQuery = searchEl ? searchEl.value.trim() : '';
 
   var rows = data.filter(function(row) {
     if (monthFilter !== 'all' && (!row.Date || row.Date.indexOf(monthFilter) !== 0)) return false;
     
+    var isAllDay = row.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
     if (slotFilter === 'all_slots') {
-      if (row.MealSlot.toUpperCase().indexOf('ALL DAY') === -1) return false;
+      if (!isAllDay) return false;
     } else if (slotFilter === 'slots_split') {
-      if (row.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1) return false;
+      if (isAllDay) return false;
     } else {
       if (row.MealSlot !== slotFilter) return false;
     }
@@ -2895,8 +2416,10 @@ window.renderSalesLogTable = function() {
   var logHtml = rows.map(function(r) {
     var isAllDay = r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1;
     var bg = isAllDay ? 'background:rgba(245,158,11,0.03);' : '';
+    var dayName = getDayNameFromDate(r.Date);
     return '<tr style="' + bg + '">'
-      + '<td style="color:#f59e0b;font-weight:600">' + r.Date + '</td>'
+      + '<td style="color:#f59e0b;font-weight:600">' + fmtDateShort(r.Date) + '</td>'
+      + '<td style="color:var(--m1)">' + dayName + '</td>'
       + '<td style="color:var(--m2)">' + r.MealSlot + '</td>'
       + '<td class="num">₹' + fmtN(r.GrossRevenue) + '</td>'
       + '<td class="num" style="color:#facc15">₹' + fmtN(r.NetRevenue) + '</td>'
@@ -2906,13 +2429,17 @@ window.renderSalesLogTable = function() {
       + '<td class="num">₹' + fmtN(r.ZomatoRev) + ' <span style="font-size:9px;color:#64748b">(' + r.ZomatoOrders + ')</span></td>'
       + '<td class="num">₹' + fmtN(r.SwiggyRev) + ' <span style="font-size:9px;color:#64748b">(' + r.SwiggyOrders + ')</span></td>'
       + '<td class="num">' + fmtN(r.TotalOrders) + '</td>'
-      + '<td class="num">₹' + r.AOV.toFixed(2) + '</td>'
+      + '<td class="num">₹' + r.AOV.toFixed(1) + '</td>'
       + '<td class="num" style="color:' + (r.CancelledOrders > 0 ? 'var(--red)' : 'var(--m1)') + '">' + r.CancelledOrders + '</td>'
       + '</tr>';
   }).join('');
   
-  if (!logHtml) {
-    logHtml = '<tr><td colspan="12" style="text-align:center;color:var(--m1)">No matching rows found.</td></tr>';
+  var logBody = document.getElementById('salesLogBody');
+  if (logBody) {
+    if (!logHtml) {
+      logBody.innerHTML = '<tr><td colspan="13" style="text-align:center;color:var(--m1)">No matching rows found.</td></tr>';
+    } else {
+      logBody.innerHTML = logHtml;
+    }
   }
-  document.getElementById('salesLogBody').innerHTML = logHtml;
 };
