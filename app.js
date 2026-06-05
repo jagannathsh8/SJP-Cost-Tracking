@@ -178,6 +178,30 @@ async function fetchOutletData(outletId, url){
       }
       return 0;
     };
+    // Normalize any date value to YYYY-MM-DD string
+    var normalizeDate = function(val) {
+      if (!val) return '';
+      if (typeof val === 'number') {
+        // Google Sheets serial date (days since 1899-12-30)
+        var d = new Date((val - 25569) * 86400 * 1000);
+        if (!isNaN(d)) {
+          var y = d.getUTCFullYear(), m = String(d.getUTCMonth()+1).padStart(2,'0'), dd = String(d.getUTCDate()).padStart(2,'0');
+          return y+'-'+m+'-'+dd;
+        }
+      }
+      var s = String(val).trim();
+      // Already YYYY-MM-DD
+      if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.substring(0,10);
+      // YYYY/MM/DD
+      if (/^\d{4}\/\d{2}\/\d{2}/.test(s)) return s.substring(0,10).replace(/\//g,'-');
+      // M/D/YYYY or D/M/YYYY — try JS Date (assumes M/D/YYYY in en-US locale)
+      var parsed = new Date(s);
+      if (!isNaN(parsed)) {
+        var py = parsed.getFullYear(), pm = String(parsed.getMonth()+1).padStart(2,'0'), pd = String(parsed.getDate()).padStart(2,'0');
+        return py+'-'+pm+'-'+pd;
+      }
+      return s;
+    };
     window.SALES_SUMMARY_DATA[outletId] = parsedTabs[salesSummaryTabName].map(function(row) {
       var gross = cleanNum(row['Gross Revenue'] || row['GrossRevenue'] || row['gross revenue'] || 0);
       var tax = cleanNum(row['Total Tax'] || row['TotalTax'] || row['total tax'] || row['Tax'] || row['tax'] || 0);
@@ -194,7 +218,7 @@ async function fetchOutletData(outletId, url){
       var zomatoRev     = findKey(row, ['zomato rev', 'zomatorev']);
       var zomatoOrders  = findKey(row, ['zomato orders', 'zomatoorders']);
       return {
-        Date: row['Date'] || row['date'] || '',
+        Date: normalizeDate(row['Date'] || row['date']),
         Outlet: row['Outlet'] || row['outlet'] || '',
         MealSlot: row['Meal Slot'] || row['MealSlot'] || row['meal slot'] || row['mealslot'] || '',
         GrossRevenue: gross,
@@ -217,7 +241,34 @@ async function fetchOutletData(outletId, url){
         TotalOrders: cleanNum(row['Total Orders'] || row['TotalOrders'] || row['total orders'] || 0),
         AOV: cleanNum(row['AOV'] || row['aov'] || 0)
       };
+    }).filter(function(r){ return r.Date && r.MealSlot; }); // drop empty rows
+
+    // ── Auto-compute ALL DAY TOTAL for dates that only have individual slot rows ──
+    // This handles cases where the sheet has Breakfast/Lunch/Snacks/Dinner but no summary row yet
+    var byDate = {};
+    window.SALES_SUMMARY_DATA[outletId].forEach(function(r) {
+      if (!byDate[r.Date]) byDate[r.Date] = [];
+      byDate[r.Date].push(r);
     });
+    var synthRows = [];
+    var numFields = ['GrossRevenue','NetRevenue','TotalTax','Packaging','DineInRev','DineInOrders',
+      'PickupRev','PickupOrders','DeliveryRev','DeliveryOrders','ZomatoRev','ZomatoOrders',
+      'SwiggyRev','SwiggyOrders','OtherDeliveryRev','UpiWalletRev','CancelledOrders','TotalOrders'];
+    Object.keys(byDate).forEach(function(date) {
+      var rows = byDate[date];
+      var hasAllDay = rows.some(function(r){ return r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1; });
+      if (!hasAllDay && rows.length > 0) {
+        var synth = { Date: date, Outlet: rows[0].Outlet, MealSlot: 'ALL DAY TOTAL' };
+        numFields.forEach(function(f){ synth[f] = rows.reduce(function(a,r){ return a + (r[f]||0); }, 0); });
+        synth.AOV = synth.TotalOrders > 0 ? synth.GrossRevenue / synth.TotalOrders : 0;
+        synthRows.push(synth);
+      }
+    });
+    if (synthRows.length) {
+      window.SALES_SUMMARY_DATA[outletId] = window.SALES_SUMMARY_DATA[outletId].concat(synthRows);
+      // Sort by date ascending
+      window.SALES_SUMMARY_DATA[outletId].sort(function(a,b){ return a.Date.localeCompare(b.Date); });
+    }
     delete parsedTabs[salesSummaryTabName];
   }
 
