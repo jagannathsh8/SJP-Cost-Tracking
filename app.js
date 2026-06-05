@@ -23,41 +23,7 @@ function saveRegistry(){
   localStorage.setItem('sjp_active_outlet', activeSheetId);
 }
 
-function switchActiveSheet(id){
-  if(!SHEET_DATA[id]) return;
-  activeSheetId = id;
-  saveRegistry();
-  
-  var d = SHEET_DATA[id];
-  // Inject into global arrays
-  DATES.length=0; d.DATES.forEach(function(x){ DATES.push(x); });
-  REV.length=0; d.REV.forEach(function(x){ REV.push(x); });
-  RM.length=0; d.RM.forEach(function(x){ RM.push(x); });
-  CP.length=0; d.CP.forEach(function(x){ CP.push(x); });
-  PKG.length=0; d.PKG.forEach(function(x){ PKG.push(x); });
-  HK.length=0; d.HK.forEach(function(x){ HK.push(x); });
-  GASU.length=0; d.GASU.forEach(function(x){ GASU.push(x); });
-  GASV.length=0; d.GASV.forEach(function(x){ GASV.push(x); });
-  WATQ.length=0; d.WATQ.forEach(function(x){ WATQ.push(x); });
-  WATV.length=0; d.WATV.forEach(function(x){ WATV.push(x); });
-  PETTY.length=0; d.PETTY.forEach(function(x){ PETTY.push(x); });
-  
-  // Inject targets
-  window.DYNAMIC_DATA = d.DYNAMIC;
-  window.TARGETS = d.TARGETS;
-  window.RUN_RATES = d.RUN_RATES;
-  window.MTDS = d.MTDS;
-  window.TARGET = d.TARGET;
-  window.MONTH_DAYS = d.MONTH_DAYS;
-  
-  var ts = document.getElementById('teamOutletSlicer');
-  if(ts) delete ts.dataset.dynamic;
-
-  killAllCharts();
-  Object.keys(builtPages).forEach(function(k){ delete builtPages[k]; });
-  renderUI();
-  setTimeout(function(){ buildPageCharts('overview'); }, 80);
-}
+// Deprecated early switchActiveSheet implementation removed; now handled by applySheetToGlobals and later switchActiveSheet.
 
 // ── Parse multi-tab Apps Script JSON into data objects ──
 function parseAppsScriptTabs(json){
