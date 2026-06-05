@@ -944,111 +944,352 @@ tbody tr:last-child td{border-bottom:none}
     </div>
   </div>
 
-  <!-- KPI Strip -->
-  <div class="kpi-grid" id="salesKpiGrid" style="margin-bottom:12px">
-    <!-- Populated dynamically -->
+  <!-- SUB-TAB BAR -->
+  <div class="stab-bar" style="margin-bottom:20px;background:var(--s1);padding:5px;border-radius:14px;border:1px solid var(--b1)">
+    <button class="stab-btn active" onclick="switchSalesTab('overview',this)">📊 Overview</button>
+    <button class="stab-btn" onclick="switchSalesTab('channels',this)">🚀 Channels</button>
+    <button class="stab-btn" onclick="switchSalesTab('daycompare',this)">📅 Day vs 4W Avg</button>
+    <button class="stab-btn" onclick="switchSalesTab('slots',this)">🕐 Slot Analysis</button>
+    <button class="stab-btn" onclick="switchSalesTab('datatables',this)">📋 Data Tables</button>
   </div>
 
-  <!-- Revenue Trend and Channel Share -->
-  <div class="grid2" style="margin-bottom:12px">
-    <div class="card card-body">
-      <div class="card-title" id="salesTrendTitle">Daily Revenue Trend</div>
-      <div class="chart-wrap">
-        <button class="exp-btn" onclick="expandChart('chSalesTrend', 'Daily Revenue Trend')">⛶</button>
-        <div style="position:relative;height:240px"><canvas id="chartSalesTrend"></canvas></div>
+  <!-- ═══ TAB 1: OVERVIEW ═══ -->
+  <div id="salesTab-overview">
+    <!-- KPI Strip -->
+    <div class="kpi-grid" id="salesKpiGrid" style="margin-bottom:12px"></div>
+
+    <!-- Channel Revenue KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px" id="salesChannelKpiGrid"></div>
+
+    <!-- Revenue Trend and Channel Share -->
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="card card-body">
+        <div class="card-title" id="salesTrendTitle">Daily Revenue Trend</div>
+        <div class="chart-wrap">
+          <button class="exp-btn" onclick="expandChart('chSalesTrend', 'Daily Revenue Trend')">⛶</button>
+          <div style="position:relative;height:240px"><canvas id="chartSalesTrend"></canvas></div>
+        </div>
+      </div>
+      <div class="card card-body">
+        <div class="card-title">Revenue Channel Mix</div>
+        <div class="chart-wrap">
+          <button class="exp-btn" onclick="expandChart('chSalesChannelShare', 'Revenue Channel Mix')">⛶</button>
+          <div style="position:relative;height:240px"><canvas id="chartSalesChannelShare"></canvas></div>
+        </div>
       </div>
     </div>
-    <div class="card card-body">
-      <div class="card-title">Revenue Channel Mix</div>
+
+    <!-- Orders Channel Mix (NEW) -->
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="card card-body">
+        <div class="card-title">Orders Channel Mix</div>
+        <div class="chart-wrap">
+          <button class="exp-btn" onclick="expandChart('chSalesOrderChannelMix', 'Orders Channel Mix')">⛶</button>
+          <div style="position:relative;height:240px"><canvas id="chartSalesOrderChannelMix"></canvas></div>
+        </div>
+      </div>
+      <div class="card card-body">
+        <div class="card-title">AOV & Orders Volume</div>
+        <div class="chart-wrap">
+          <button class="exp-btn" onclick="expandChart('chSalesAovTrend', 'AOV and Orders Trend')">⛶</button>
+          <div style="position:relative;height:240px"><canvas id="chartSalesAovTrend"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meal Slot share -->
+    <div class="card card-body" id="salesSlotShareCard" style="margin-bottom:12px; display:none;">
+      <div class="card-title">Meal Slot Revenue Mix</div>
       <div class="chart-wrap">
-        <button class="exp-btn" onclick="expandChart('chSalesChannelShare', 'Revenue Channel Mix')">⛶</button>
-        <div style="position:relative;height:240px"><canvas id="chartSalesChannelShare"></canvas></div>
+        <button class="exp-btn" onclick="expandChart('chSalesSlotShare', 'Meal Slot Share')">⛶</button>
+        <div style="position:relative;height:240px"><canvas id="chartSalesSlotShare"></canvas></div>
       </div>
     </div>
   </div>
 
-  <!-- Delivery Partner & Aov Trend -->
-  <div class="grid2" style="margin-bottom:12px">
-    <div class="card card-body">
-      <div class="card-title">Zomato vs Swiggy Channel</div>
+  <!-- ═══ TAB 2: CHANNELS DEEP DIVE ═══ -->
+  <div id="salesTab-channels" style="display:none">
+    <!-- Channel Revenue Trend (Stacked) -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title">📈 Daily Revenue by Channel (Delivery · Dine-In · Pickup)</div>
       <div class="chart-wrap">
-        <button class="exp-btn" onclick="expandChart('chSalesDeliveryComparison', 'Zomato vs Swiggy Comparison')">⛶</button>
-        <div style="position:relative;height:240px"><canvas id="chartSalesDeliveryComparison"></canvas></div>
+        <button class="exp-btn" onclick="expandChart('chSalesChannelRevTrend', 'Channel Revenue Trend')">⛶</button>
+        <div style="position:relative;height:280px"><canvas id="chartSalesChannelRevTrend"></canvas></div>
       </div>
     </div>
-    <div class="card card-body">
-      <div class="card-title">AOV & Orders Volume</div>
+
+    <!-- Channel Orders Trend (Stacked) -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title">📦 Daily Orders by Channel</div>
       <div class="chart-wrap">
-        <button class="exp-btn" onclick="expandChart('chSalesAovTrend', 'AOV and Orders Trend')">⛶</button>
-        <div style="position:relative;height:240px"><canvas id="chartSalesAovTrend"></canvas></div>
+        <button class="exp-btn" onclick="expandChart('chSalesChannelOrdTrend', 'Channel Orders Trend')">⛶</button>
+        <div style="position:relative;height:280px"><canvas id="chartSalesChannelOrdTrend"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Zomato vs Swiggy -->
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="card card-body">
+        <div class="card-title">🔴 Zomato vs 🟠 Swiggy Revenue</div>
+        <div class="chart-wrap">
+          <button class="exp-btn" onclick="expandChart('chSalesDeliveryComparison', 'Zomato vs Swiggy')">⛶</button>
+          <div style="position:relative;height:240px"><canvas id="chartSalesDeliveryComparison"></canvas></div>
+        </div>
+      </div>
+      <div class="card card-body">
+        <div class="card-title">Zomato vs Swiggy Orders</div>
+        <div class="chart-wrap">
+          <button class="exp-btn" onclick="expandChart('chSalesDeliveryOrdComp', 'Delivery Orders Comparison')">⛶</button>
+          <div style="position:relative;height:240px"><canvas id="chartSalesDeliveryOrdComp"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Channel-wise KPI Table -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title" style="padding:0 10px">Channel Performance Summary</div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Channel</th>
+              <th class="num">Total Revenue</th>
+              <th class="num">% of Revenue</th>
+              <th class="num">Total Orders</th>
+              <th class="num">% of Orders</th>
+              <th class="num">AOV</th>
+              <th class="num">Daily Avg Rev</th>
+              <th class="num">Daily Avg Orders</th>
+              <th class="num">Peak Day Rev</th>
+            </tr>
+          </thead>
+          <tbody id="salesChannelSummaryBody"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- Meal Slot share (only shown when slots_split or all_slots is active) -->
-  <div class="card card-body" id="salesSlotShareCard" style="margin-bottom:12px; display:none;">
-    <div class="card-title">Meal Slot Revenue Mix</div>
-    <div class="chart-wrap">
-      <button class="exp-btn" onclick="expandChart('chSalesSlotShare', 'Meal Slot Share')">⛶</button>
-      <div style="position:relative;height:240px"><canvas id="chartSalesSlotShare"></canvas></div>
+  <!-- ═══ TAB 3: DAY vs 4-WEEK AVG ═══ -->
+  <div id="salesTab-daycompare" style="display:none">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
+      <label style="font-size:11px;color:var(--m1);font-weight:700">Select Day:</label>
+      <select id="salesDayCompareSelect" class="inp" style="width:auto;font-size:11px;padding:5px 10px;height:auto" onchange="buildSalesDayCompare()">
+        <option value="">-- Select a Date --</option>
+      </select>
+      <div id="salesDayCompareDayName" style="font-size:12px;color:var(--amb);font-weight:700"></div>
+    </div>
+
+    <!-- Day vs 4W Avg KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px" id="salesDayCompareKpis"></div>
+
+    <!-- Day vs 4W Avg Chart -->
+    <div class="grid2" style="margin-bottom:12px">
+      <div class="card card-body">
+        <div class="card-title">Revenue: Selected Day vs 4-Week Same-Day Average</div>
+        <div class="chart-wrap">
+          <button class="exp-btn" onclick="expandChart('chSalesDayVs4W', 'Day vs 4W Avg Revenue')">⛶</button>
+          <div style="position:relative;height:280px"><canvas id="chartSalesDayVs4W"></canvas></div>
+        </div>
+      </div>
+      <div class="card card-body">
+        <div class="card-title">Orders: Selected Day vs 4-Week Same-Day Average</div>
+        <div class="chart-wrap">
+          <button class="exp-btn" onclick="expandChart('chSalesDayVs4WOrd', 'Day vs 4W Avg Orders')">⛶</button>
+          <div style="position:relative;height:280px"><canvas id="chartSalesDayVs4WOrd"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Same Day Trend (Last 4+ same weekdays) -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title" id="salesSameDayTrendTitle">Same Weekday Revenue Trend</div>
+      <div class="chart-wrap">
+        <button class="exp-btn" onclick="expandChart('chSalesSameDayTrend', 'Same Day Trend')">⛶</button>
+        <div style="position:relative;height:260px"><canvas id="chartSalesSameDayTrend"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Day vs 4W Detail Table -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title" style="padding:0 10px">Detailed Day vs 4-Week Average Comparison</div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th class="num">Selected Day</th>
+              <th class="num">4-Week Avg</th>
+              <th class="num">Variance</th>
+              <th class="num">% Change</th>
+              <th class="num">Status</th>
+            </tr>
+          </thead>
+          <tbody id="salesDayCompareTableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Meal Slot Operations Matrix -->
-  <div class="card card-body" style="margin-bottom:12px">
-    <div class="card-title" style="padding:0 10px">Meal Slot Operations Summary</div>
-    <div class="tbl-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Meal Slot</th>
-            <th class="num">Gross Revenue</th>
-            <th class="num">Net Revenue (Gross-Tax)</th>
-            <th class="num">Dine-In</th>
-            <th class="num">Pickup</th>
-            <th class="num">Delivery</th>
-            <th class="num">Zomato</th>
-            <th class="num">Swiggy</th>
-            <th class="num">Total Orders</th>
-            <th class="num">AOV</th>
-            <th class="num">Cancellations</th>
-          </tr>
-        </thead>
-        <tbody id="salesMatrixBody">
-          <!-- Populated dynamically -->
-        </tbody>
-      </table>
+  <!-- ═══ TAB 4: SLOT ANALYSIS ═══ -->
+  <div id="salesTab-slots" style="display:none">
+    <!-- Slot-wise Revenue Trend (All Slots Stacked per Day) -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title">🕐 Slot-wise Revenue Trend (Stacked Daily)</div>
+      <div class="chart-wrap">
+        <button class="exp-btn" onclick="expandChart('chSalesSlotTrend', 'Slot Revenue Trend')">⛶</button>
+        <div style="position:relative;height:280px"><canvas id="chartSalesSlotTrend"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Slot-wise Orders Trend -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title">📦 Slot-wise Orders Trend</div>
+      <div class="chart-wrap">
+        <button class="exp-btn" onclick="expandChart('chSalesSlotOrdTrend', 'Slot Orders Trend')">⛶</button>
+        <div style="position:relative;height:280px"><canvas id="chartSalesSlotOrdTrend"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Slot-wise Same Day Average (4 Week) -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title">📊 Slot-wise 4-Week Average by Day of Week</div>
+      <div class="chart-wrap">
+        <button class="exp-btn" onclick="expandChart('chSalesSlot4WAvg', 'Slot 4W Avg')">⛶</button>
+        <div style="position:relative;height:280px"><canvas id="chartSalesSlot4WAvg"></canvas></div>
+      </div>
+    </div>
+
+    <!-- Slot KPI Grid -->
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px" id="salesSlotKpiGrid"></div>
+
+    <!-- Meal Slot Operations Matrix -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title" style="padding:0 10px">Meal Slot Operations Summary</div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Meal Slot</th>
+              <th class="num">Gross Revenue</th>
+              <th class="num">Net Revenue</th>
+              <th class="num">Dine-In</th>
+              <th class="num">Pickup</th>
+              <th class="num">Delivery</th>
+              <th class="num">Zomato</th>
+              <th class="num">Swiggy</th>
+              <th class="num">Total Orders</th>
+              <th class="num">AOV</th>
+              <th class="num">Cancellations</th>
+            </tr>
+          </thead>
+          <tbody id="salesMatrixBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Slot-wise Daily Table -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title" style="padding:0 10px">Slot-wise Daily Breakdown</div>
+      <div class="tbl-scroll" style="max-height:50vh">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Day</th>
+              <th class="num">Breakfast Rev</th>
+              <th class="num">Breakfast Ord</th>
+              <th class="num">Lunch Rev</th>
+              <th class="num">Lunch Ord</th>
+              <th class="num">Snacks Rev</th>
+              <th class="num">Snacks Ord</th>
+              <th class="num">Dinner Rev</th>
+              <th class="num">Dinner Ord</th>
+              <th class="num">Total Rev</th>
+              <th class="num">Total Ord</th>
+            </tr>
+          </thead>
+          <tbody id="salesSlotDailyTableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- Operations Log Table -->
-  <div class="card card-body">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 10px">
-      <div class="card-title" style="margin:0;padding:0">Daily Sales Operations Log</div>
-      <input type="text" id="salesLogSearch" class="inp" placeholder="Search date..." style="width:160px;font-size:11px;padding:4px 10px;height:auto" oninput="renderSalesLogTable()">
+  <!-- ═══ TAB 5: DATA TABLES ═══ -->
+  <div id="salesTab-datatables" style="display:none">
+    <!-- Day-of-Week Summary Table -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title" style="padding:0 10px">📅 Day-of-Week Performance Summary</div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Day</th>
+              <th class="num">Avg Gross Rev</th>
+              <th class="num">Avg Orders</th>
+              <th class="num">AOV</th>
+              <th class="num">Avg Dine-In</th>
+              <th class="num">Avg Pickup</th>
+              <th class="num">Avg Delivery</th>
+              <th class="num">Total Gross Rev</th>
+              <th class="num"># Days</th>
+            </tr>
+          </thead>
+          <tbody id="salesDowTableBody"></tbody>
+        </table>
+      </div>
     </div>
-    <div class="tbl-scroll">
-      <table>
-        <thead>
-          <tr>
-            <th>Date</th>
-            <th>Meal Slot</th>
-            <th class="num">Gross Revenue</th>
-            <th class="num">Net Revenue (Gross-Tax)</th>
-            <th class="num">Dine-In Rev</th>
-            <th class="num">Pickup Rev</th>
-            <th class="num">Delivery Rev</th>
-            <th class="num">Zomato Rev (Orders)</th>
-            <th class="num">Swiggy Rev (Orders)</th>
-            <th class="num">Total Orders</th>
-            <th class="num">AOV</th>
-            <th class="num">Cancelled</th>
-          </tr>
-        </thead>
-        <tbody id="salesLogBody">
-          <!-- Populated dynamically -->
-        </tbody>
-      </table>
+
+    <!-- Operations Log Table -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding:0 10px">
+        <div class="card-title" style="margin:0;padding:0">📋 Daily Sales Operations Log</div>
+        <input type="text" id="salesLogSearch" class="inp" placeholder="Search date..." style="width:160px;font-size:11px;padding:4px 10px;height:auto" oninput="renderSalesLogTable()">
+      </div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Day</th>
+              <th>Meal Slot</th>
+              <th class="num">Gross Rev</th>
+              <th class="num">Net Rev</th>
+              <th class="num">Dine-In</th>
+              <th class="num">Pickup</th>
+              <th class="num">Delivery</th>
+              <th class="num">Zomato</th>
+              <th class="num">Swiggy</th>
+              <th class="num">Orders</th>
+              <th class="num">AOV</th>
+              <th class="num">Cancelled</th>
+            </tr>
+          </thead>
+          <tbody id="salesLogBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Channel-wise Weekly Summary -->
+    <div class="card card-body" style="margin-bottom:12px">
+      <div class="card-title" style="padding:0 10px">📊 Weekly Revenue & Orders Summary</div>
+      <div class="tbl-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Week</th>
+              <th class="num">Gross Rev</th>
+              <th class="num">Dine-In Rev</th>
+              <th class="num">Pickup Rev</th>
+              <th class="num">Delivery Rev</th>
+              <th class="num">Total Orders</th>
+              <th class="num">AOV</th>
+              <th class="num">Avg Daily Rev</th>
+              <th class="num">Cancelled</th>
+            </tr>
+          </thead>
+          <tbody id="salesWeeklyTableBody"></tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
