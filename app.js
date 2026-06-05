@@ -205,7 +205,8 @@ async function fetchOutletData(outletId, url){
     window.SALES_SUMMARY_DATA[outletId] = parsedTabs[salesSummaryTabName].map(function(row) {
       var gross = cleanNum(row['Gross Revenue'] || row['GrossRevenue'] || row['gross revenue'] || 0);
       var tax = cleanNum(row['Total Tax'] || row['TotalTax'] || row['total tax'] || row['Tax'] || row['tax'] || 0);
-      var calculatedNet = gross - tax;
+      var pkg = cleanNum(row['Packaging'] || row['packaging'] || 0);
+      var calculatedNet = gross - tax - pkg;
       // Flexible lookups for columns whose names vary by outlet
       var dineInRev     = findKey(row, ['dine in rev', 'dine-in rev', 'dinein rev', 'dineinrev']);
       var pickupRev     = findKey(row, ['pick up rev', 'pickup rev', 'pickuprev']);
@@ -224,7 +225,7 @@ async function fetchOutletData(outletId, url){
         GrossRevenue: gross,
         NetRevenue: calculatedNet,
         TotalTax: tax,
-        Packaging: cleanNum(row['Packaging'] || row['packaging'] || 0),
+        Packaging: pkg,
         DineInRev: dineInRev,
         DineInOrders: dineInOrders,
         PickupRev: pickupRev,
@@ -1748,6 +1749,56 @@ function getCompareData(allData, selectedMonth, offsetMonths) {
   };
 }
 
+function getWeekCompareData(allData) {
+  var allDay = allData.filter(function(r){ return r.Date && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1; });
+  if (allDay.length === 0) return null;
+  allDay.sort(function(a,b){ return a.Date.localeCompare(b.Date); });
+  
+  var maxDateStr = allDay[allDay.length - 1].Date;
+  var maxD = new Date(maxDateStr);
+  
+  var curEnd = new Date(maxD);
+  var curStart = new Date(maxD);
+  curStart.setDate(curStart.getDate() - 6);
+  
+  var prevEnd = new Date(curStart);
+  prevEnd.setDate(prevEnd.getDate() - 1);
+  var prevStart = new Date(prevEnd);
+  prevStart.setDate(prevStart.getDate() - 6);
+  
+  var fmt = function(d) {
+    var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+dd;
+  };
+  
+  var curStartStr = fmt(curStart), curEndStr = fmt(curEnd);
+  var prevStartStr = fmt(prevStart), prevEndStr = fmt(prevEnd);
+  
+  var curRows = allDay.filter(function(r) { return r.Date >= curStartStr && r.Date <= curEndStr; });
+  var prevRows = allDay.filter(function(r) { return r.Date >= prevStartStr && r.Date <= prevEndStr; });
+  
+  if (curRows.length === 0 || prevRows.length === 0) return null;
+  
+  var curGross = curRows.reduce(function(a,r){ return a+r.GrossRevenue;}, 0);
+  var curOrders = curRows.reduce(function(a,r){ return a+r.TotalOrders;}, 0);
+  var tgtGross = prevRows.reduce(function(a,r){ return a+r.GrossRevenue;}, 0);
+  var tgtOrders = prevRows.reduce(function(a,r){ return a+r.TotalOrders;}, 0);
+  
+  var sssg = tgtGross > 0 ? ((curGross - tgtGross) / tgtGross * 100) : 0;
+  var sstg = tgtOrders > 0 ? ((curOrders - tgtOrders) / tgtOrders * 100) : 0;
+  
+  return {
+    curGross: curGross,
+    curOrders: curOrders,
+    tgtGross: tgtGross,
+    tgtOrders: tgtOrders,
+    sssg: sssg,
+    sstg: sstg,
+    daysCompared: curRows.length,
+    targetMonthLabel: 'Last 7 Days'
+  };
+}
+
 function buildSalesDetailCharts() {
   var activeOutletId = activeSheetId ? activeSheetId.split('__')[0] : '';
   if (!activeOutletId && SHEET_REGISTRY.length) {
@@ -1839,12 +1890,12 @@ function buildSalesDetailCharts() {
   var kpiGrid = document.getElementById('salesKpiGrid');
   if (kpiGrid) {
     kpiGrid.innerHTML = [
-      {l:'GROSS REVENUE', v:'₹'+fmtN(totalGross), s:'Total sales before tax & packaging', c:'var(--grn)'},
-      {l:'NET REVENUE', v:'₹'+fmtN(totalNet), s:'Net Sales (Gross - Tax)', c:'#facc15'},
+      {l:'GROSS REVENUE', v:'₹'+fmtN(totalGross), s:'Total sales before tax & pkg', c:'var(--grn)'},
+      {l:'NET REVENUE', v:'₹'+fmtN(totalNet), s:'Net Sales (Gross - Tax - Pkg)', c:'#facc15'},
       {l:'TOTAL ORDERS', v:fmtN(totalOrders), s:'Total orders placed', c:'#60a5fa'},
       {l:'AVG ORDER VALUE', v:'₹'+overallAov.toFixed(2), s:'AOV = Gross / Orders', c:'#a78bfa'},
       {l:'CANCELLED ORDERS', v:fmtN(totalCancelled), s:cancelPct.toFixed(1)+'% cancellation rate', c:'var(--red)'},
-      {l:'PACKAGING & TAX', v:'₹'+fmtN(totalPkg), s:'Tax subtracted: ₹'+fmtN(totalTax), c:'#38bdf8'}
+      {l:'PACKAGING & TAX', v:'₹'+fmtN(totalPkg + totalTax), s:'Pkg: ₹'+fmtN(totalPkg)+' | Tax: ₹'+fmtN(totalTax), c:'#38bdf8'}
     ].map(function(k){
       return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div>'
             +'<div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div>'
@@ -1855,6 +1906,8 @@ function buildSalesDetailCharts() {
   // Render LFL Growth Grid on Overview
   var growthGrid = document.getElementById('salesGrowthGrid');
   if (growthGrid) {
+    growthGrid.className = 'grid3';
+    var wowData = getWeekCompareData(data);
     var momData = getCompareData(data, selectedMonth, 1);
     var yoyData = getCompareData(data, selectedMonth, 12);
     
@@ -1871,6 +1924,8 @@ function buildSalesDetailCharts() {
       var sssgSign = gData.sssg >= 0 ? '+' : '';
       var sstgSign = gData.sstg >= 0 ? '+' : '';
       
+      var footerTxt = title.indexOf('Week') !== -1 ? (gData.daysCompared + ' Days Compared') : ('Matched Day Range: Days 1-' + gData.daysCompared);
+      
       return '<div style="background:var(--s2); border:1px solid var(--b1); border-radius:12px; padding:16px">'
         + '<div style="font-size:11px; font-weight:800; color:var(--m1); letter-spacing:0.5px; text-transform:uppercase; margin-bottom:12px">LFL Growth vs ' + gData.targetMonthLabel + '</div>'
         + '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px">'
@@ -1881,14 +1936,14 @@ function buildSalesDetailCharts() {
         + '  <span style="font-size:12px; color:var(--m2)">SSTG (Orders Growth)</span>'
         + '  <span style="font-size:14px; font-weight:800; color:' + sstgColor + '">' + sstgSign + gData.sstg.toFixed(1) + '%</span>'
         + '</div>'
-        + '<div style="font-size:9px; color:var(--m1); margin-top:10px; border-top:1px solid var(--b1); padding-top:6px">Matched Day Range: Days 1-' + gData.daysCompared + '</div>'
+        + '<div style="font-size:9px; color:var(--m1); margin-top:10px; border-top:1px solid var(--b1); padding-top:6px">' + footerTxt + '</div>'
         + '</div>';
     };
     
     if (selectedMonth === 'all') {
-      growthGrid.innerHTML = '<div style="grid-column: span 2; text-align:center; padding:16px; color:var(--m1); font-size:11px">Select a specific month to view growth comparisons.</div>';
+      growthGrid.innerHTML = renderGrowthCard('Week-over-Week (WoW)', wowData) + '<div style="grid-column: span 2; text-align:center; padding:16px; color:var(--m1); font-size:11px">Select a specific month to view MoM/YoY growth.</div>';
     } else {
-      growthGrid.innerHTML = renderGrowthCard('Month-over-Month (MoM)', momData) + renderGrowthCard('Year-over-Year (YoY)', yoyData);
+      growthGrid.innerHTML = renderGrowthCard('Week-over-Week (WoW)', wowData) + renderGrowthCard('Month-over-Month (MoM)', momData) + renderGrowthCard('Year-over-Year (YoY)', yoyData);
     }
   }
 
@@ -1929,6 +1984,7 @@ function buildSalesDetailCharts() {
             { label: 'Net Revenue', data: dailyNet, backgroundColor: 'rgba(245, 158, 11, 0.75)', borderRadius: 4 }
           ]
         },
+        plugins: [ChartDataLabels],
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
@@ -1937,6 +1993,13 @@ function buildSalesDetailCharts() {
           },
           plugins: {
             legend: { labels: { color: '#94a3b8' } },
+            datalabels: {
+              color: '#fff',
+              anchor: 'end',
+              align: 'top',
+              font: { weight: 'bold', size: 10, family: "'DM Sans', sans-serif" },
+              formatter: function(val) { return val > 0 ? fmtN(val) : ''; }
+            },
             tooltip: {
               ...TT,
               callbacks: {
