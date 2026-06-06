@@ -1611,7 +1611,7 @@ window.switchSalesTab = function(tab, btn) {
   window.activeSalesSubTab = tab;
   
   // Toggle tab contents
-  ['overview', 'channels', 'daycompare', 'slots', 'datatables'].forEach(function(t) {
+  ['overview', 'channels', 'daycompare', 'slots', 'daydrill', 'datatables'].forEach(function(t) {
     var el = document.getElementById('salesTab-' + t);
     if (el) el.style.display = (t === tab) ? 'block' : 'none';
   });
@@ -1634,7 +1634,406 @@ window.switchSalesTab = function(tab, btn) {
     }
   }
   
-  buildSalesDetailCharts();
+  if (tab === 'daydrill') {
+    initDrillSelectors();
+  } else {
+    buildSalesDetailCharts();
+  }
+};
+
+// ═══════════════════════════════════════════════
+// DAY DRILL-DOWN ENGINE
+// ═══════════════════════════════════════════════
+
+window.initDrillSelectors = function() {
+  var sel = document.getElementById('drillOutletSel');
+  if (!sel) return;
+  var html = '<option value="">Select Outlet</option>';
+  SHEET_REGISTRY.forEach(function(s) {
+    if (window.SALES_SUMMARY_DATA && window.SALES_SUMMARY_DATA[s.id] && window.SALES_SUMMARY_DATA[s.id].length) {
+      html += '<option value="' + s.id + '">' + s.label + '</option>';
+    }
+  });
+  sel.innerHTML = html;
+
+  // Auto-select current active outlet
+  var activeOutletId = activeSheetId ? activeSheetId.split('__')[0] : '';
+  if (activeOutletId && sel.querySelector('option[value="' + activeOutletId + '"]')) {
+    sel.value = activeOutletId;
+  }
+  populateDrillDates();
+};
+
+window.populateDrillDates = function() {
+  var outletId = document.getElementById('drillOutletSel').value;
+  var dateSel = document.getElementById('drillDateSel');
+  dateSel.innerHTML = '<option value="">Select Date</option>';
+  if (!outletId || !window.SALES_SUMMARY_DATA || !window.SALES_SUMMARY_DATA[outletId]) return;
+  
+  var data = window.SALES_SUMMARY_DATA[outletId];
+  var allDayData = data.filter(function(r){ return r.Date && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1; });
+  allDayData.sort(function(a,b){ return b.Date.localeCompare(a.Date); });
+  
+  var seenDates = {};
+  allDayData.forEach(function(r) {
+    if (!seenDates[r.Date]) {
+      seenDates[r.Date] = true;
+      var d = new Date(r.Date);
+      var dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      var mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      var label = dayNames[d.getDay()] + ', ' + d.getDate() + ' ' + mNames[d.getMonth()] + ' ' + d.getFullYear();
+      dateSel.innerHTML += '<option value="' + r.Date + '">' + label + '</option>';
+    }
+  });
+  
+  // Auto-select latest date
+  if (allDayData.length) dateSel.value = allDayData[0].Date;
+  runDayDrill();
+};
+
+window.runDayDrill = function() {
+  var outletId = document.getElementById('drillOutletSel').value;
+  var selectedDate = document.getElementById('drillDateSel').value;
+  
+  var placeholder = document.getElementById('drillPlaceholder');
+  var kpiGrid = document.getElementById('drillKpiGrid');
+  var compCard = document.getElementById('drillCompCard');
+  var channelCard = document.getElementById('drillChannelCard');
+  var slotCard = document.getElementById('drillSlotCard');
+  var rootCard = document.getElementById('drillRootCauseCard');
+  
+  if (!outletId || !selectedDate) {
+    placeholder.style.display = 'block';
+    [kpiGrid, compCard, channelCard, slotCard, rootCard].forEach(function(el){ if(el) el.style.display = 'none'; });
+    return;
+  }
+  
+  var data = window.SALES_SUMMARY_DATA[outletId];
+  if (!data) return;
+  
+  placeholder.style.display = 'none';
+  
+  var selD = new Date(selectedDate);
+  var dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var fullDayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var mNames = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+  var selectedWeekday = selD.getDay();
+  var selectedWeekdayName = dayNames[selectedWeekday];
+  
+  // Get ALL DAY row for selected date
+  var todayRow = data.find(function(r){ return r.Date === selectedDate && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1; });
+  if (!todayRow) { 
+    placeholder.style.display = 'block'; 
+    [kpiGrid, compCard, channelCard, slotCard, rootCard].forEach(function(el){ if(el) el.style.display = 'none'; });
+    return; 
+  }
+  
+  // Get slot rows for selected date
+  var slotNames = ["Breakfast (7AM-12PM)", "Lunch (12PM-4PM)", "Snacks (4PM-7PM)", "Dinner (7PM+)"];
+  var todaySlotRows = {};
+  slotNames.forEach(function(s){ todaySlotRows[s] = data.find(function(r){ return r.Date === selectedDate && r.MealSlot === s; }) || null; });
+  
+  // ── KPI Grid ──
+  kpiGrid.style.display = 'grid';
+  var aov = todayRow.TotalOrders > 0 ? (todayRow.GrossRevenue / todayRow.TotalOrders) : 0;
+  kpiGrid.innerHTML = [
+    {l:'GROSS REVENUE', v:'₹'+fmtN(todayRow.GrossRevenue), s:fullDayNames[selectedWeekday]+', '+selectedDate, c:'var(--grn)'},
+    {l:'NET REVENUE',   v:'₹'+fmtN(todayRow.NetRevenue),   s:'After tax & packaging', c:'#facc15'},
+    {l:'TOTAL ORDERS',  v:fmtN(todayRow.TotalOrders),       s:'Placed this day', c:'#60a5fa'},
+    {l:'AVG ORDER VALUE', v:'₹'+aov.toFixed(2),             s:'Gross ÷ Orders', c:'#a78bfa'}
+  ].map(function(k){
+    return '<div class="kpi-card"><div class="kpi-lbl">'+k.l+'</div><div class="kpi-val" style="color:'+k.c+'">'+k.v+'</div><div class="kpi-sub">'+k.s+'</div></div>';
+  }).join('');
+  
+  // ── Helpers ──
+  var getDaysBefore = function(dateStr, days) {
+    var d = new Date(dateStr);
+    d.setDate(d.getDate() - days);
+    var y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), dd = String(d.getDate()).padStart(2,'0');
+    return y+'-'+m+'-'+dd;
+  };
+  
+  // Find same weekday occurrences going back
+  var getSameWeekdayRows = function(sinceDate, untilDate, excludeDate) {
+    return data.filter(function(r){
+      if (!r.Date || r.MealSlot.toUpperCase().indexOf('ALL DAY') === -1) return false;
+      if (r.Date === excludeDate) return false;
+      if (r.Date >= selectedDate) return false;
+      if (sinceDate && r.Date < sinceDate) return false;
+      if (untilDate && r.Date > untilDate) return false;
+      return getDayNameFromDate(r.Date) === selectedWeekdayName;
+    }).sort(function(a,b){ return b.Date.localeCompare(a.Date); });
+  };
+  
+  var getAvgOf = function(rows, field) {
+    if (!rows.length) return null;
+    return rows.reduce(function(a,r){ return a+(r[field]||0);},0) / rows.length;
+  };
+  
+  var fmtRef = function(date) {
+    if (!date) return '—';
+    var d = new Date(date);
+    return dayNames[d.getDay()] + ' ' + d.getDate() + ' ' + mNames[d.getMonth()];
+  };
+  
+  // Same day last week (7 days back, must be same weekday)
+  var lastWeekDate = getDaysBefore(selectedDate, 7);
+  var lastWeekRow = data.find(function(r){ return r.Date === lastWeekDate && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1; });
+  
+  // Same weekday last month: find most recent matching weekday that falls in prev month
+  var selYear = selD.getFullYear(), selMonth = selD.getMonth();
+  var prevMonthYear = selMonth === 0 ? selYear - 1 : selYear;
+  var prevMonthIdx = selMonth === 0 ? 11 : selMonth - 1;
+  var prevMonthStr = prevMonthYear + '-' + String(prevMonthIdx+1).padStart(2,'0');
+  
+  var prevMonthSameWeekdays = data.filter(function(r){
+    return r.Date && r.Date.indexOf(prevMonthStr) === 0 && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1 && getDayNameFromDate(r.Date) === selectedWeekdayName;
+  }).sort(function(a,b){ return b.Date.localeCompare(a.Date); });
+  var prevMonthSameWdRow = prevMonthSameWeekdays[0] || null; // most recent same-weekday in prev month
+  
+  // 4-week avg of same weekday (last 4 occurrences before today)
+  var last4SameWd = getSameWeekdayRows(null, getDaysBefore(selectedDate, 1), selectedDate).slice(0, 4);
+  var avg4GrossRev = getAvgOf(last4SameWd, 'GrossRevenue');
+  var avg4Orders   = getAvgOf(last4SameWd, 'TotalOrders');
+  
+  // Same weekday 4 weeks of prev month
+  var prevMonthAllWd = prevMonthSameWeekdays.slice(0, 4);
+  var prevMoAvgGross = getAvgOf(prevMonthAllWd, 'GrossRevenue');
+  var prevMoAvgOrd   = getAvgOf(prevMonthAllWd, 'TotalOrders');
+  
+  // Same day last year
+  var lastYearDate = (selD.getFullYear()-1) + '-' + String(selD.getMonth()+1).padStart(2,'0') + '-' + String(selD.getDate()).padStart(2,'0');
+  var lastYearRow = data.find(function(r){ return r.Date === lastYearDate && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1; });
+  
+  // Same weekday prev year same month
+  var lyMonthStr = (selD.getFullYear()-1) + '-' + String(selD.getMonth()+1).padStart(2,'0');
+  var lyMonthSameWd = data.filter(function(r){
+    return r.Date && r.Date.indexOf(lyMonthStr) === 0 && r.MealSlot.toUpperCase().indexOf('ALL DAY') !== -1 && getDayNameFromDate(r.Date) === selectedWeekdayName;
+  }).sort(function(a,b){ return b.Date.localeCompare(a.Date); });
+  var lyAvgGross = getAvgOf(lyMonthSameWd, 'GrossRevenue');
+  var lyAvgOrd   = getAvgOf(lyMonthSameWd, 'TotalOrders');
+  
+  // ── Build comparison rows ──
+  var mkCompRow = function(label, ref, refGross, refOrders, refLabel) {
+    if (refGross === null || refGross === undefined) {
+      return '<tr>'
+        + '<td style="font-weight:600;color:var(--m2)">' + label + '</td>'
+        + '<td style="color:var(--m1);font-size:11px">' + refLabel + '</td>'
+        + '<td colspan="6" class="num" style="color:var(--m1);font-style:italic">No data available</td>'
+        + '</tr>';
+    }
+    var revToday = todayRow.GrossRevenue;
+    var ordToday = todayRow.TotalOrders;
+    var revDelta = revToday - refGross;
+    var ordDelta = ordToday - (refOrders || 0);
+    var revPct   = refGross > 0 ? (revDelta / refGross * 100) : 0;
+    var isRevDrop = revDelta < 0;
+    var signal = isRevDrop ? '🔴 DROP' : '🟢 GROWTH';
+    var revColor = isRevDrop ? 'var(--red)' : 'var(--grn)';
+    var sign = revDelta >= 0 ? '+' : '';
+    return '<tr>'
+      + '<td style="font-weight:600;color:var(--m2)">' + label + '</td>'
+      + '<td style="color:var(--m1);font-size:11px">' + refLabel + '</td>'
+      + '<td class="num">₹' + fmtN(refGross) + '</td>'
+      + '<td class="num">' + (refOrders ? fmtN(refOrders) : '—') + '</td>'
+      + '<td class="num" style="color:' + revColor + ';font-weight:700">' + sign + '₹' + fmtN(Math.abs(revDelta)) + (isRevDrop ? ' ▼' : ' ▲') + '</td>'
+      + '<td class="num" style="color:' + (ordDelta >= 0 ? 'var(--grn)' : 'var(--red)') + '">' + (ordDelta >= 0 ? '+' : '') + ordDelta.toFixed(0) + '</td>'
+      + '<td class="num" style="color:' + revColor + ';font-weight:700">' + sign + revPct.toFixed(1) + '%</td>'
+      + '<td class="num"><span style="font-size:11px;font-weight:700;padding:2px 6px;border-radius:4px;background:' + (isRevDrop ? 'rgba(244,63,94,0.12)' : 'rgba(16,185,129,0.12)') + ';color:' + revColor + '">' + signal + '</span></td>'
+      + '</tr>';
+  };
+  
+  compCard.style.display = 'block';
+  document.getElementById('drillCompBody').innerHTML = [
+    mkCompRow('Same Day Last Week',             lastWeekDate, lastWeekRow ? lastWeekRow.GrossRevenue : null, lastWeekRow ? lastWeekRow.TotalOrders : null, fmtRef(lastWeekDate)),
+    mkCompRow('Same '+selectedWeekdayName+' Last Month', prevMonthSameWdRow ? prevMonthSameWdRow.Date : null, prevMonthSameWdRow ? prevMonthSameWdRow.GrossRevenue : null, prevMonthSameWdRow ? prevMonthSameWdRow.TotalOrders : null, prevMonthSameWdRow ? fmtRef(prevMonthSameWdRow.Date) : mNames[prevMonthIdx]+' (none)'),
+    mkCompRow('Avg '+selectedWeekdayName+' Last Month (All)',  null, prevMoAvgGross, prevMoAvgOrd, prevMonthAllWd.length + ' '+selectedWeekdayName+'s in '+mNames[prevMonthIdx]),
+    mkCompRow('4-Week Same Weekday Avg',         null, avg4GrossRev, avg4Orders, last4SameWd.length > 0 ? last4SameWd.map(function(r){return fmtRef(r.Date);}).join(', ') : 'No data'),
+    mkCompRow('Same Date Last Year',             lastYearDate, lastYearRow ? lastYearRow.GrossRevenue : null, lastYearRow ? lastYearRow.TotalOrders : null, fmtRef(lastYearDate)+' '+((selD.getFullYear()-1))),
+    mkCompRow('Avg '+selectedWeekdayName+' Last Year Same Mo', null, lyAvgGross, lyAvgOrd, lyMonthSameWd.length + ' pts in ' + mNames[selD.getMonth()]+' '+(selD.getFullYear()-1)),
+  ].join('');
+  
+  // ── Channel Drill (vs same weekday last month) ──
+  channelCard.style.display = 'block';
+  var refRowForChannel = prevMonthSameWdRow; // best single-day comparison
+  
+  var channels = [
+    {n:'Dine-In',         today:todayRow.DineInRev,   ref:refRowForChannel ? refRowForChannel.DineInRev : null,   icon:'🍽️'},
+    {n:'Pickup/Takeaway', today:todayRow.PickupRev,    ref:refRowForChannel ? refRowForChannel.PickupRev : null,   icon:'🛍️'},
+    {n:'Delivery (All)',  today:todayRow.DeliveryRev,  ref:refRowForChannel ? refRowForChannel.DeliveryRev : null, icon:'🛵'},
+    {n:'Zomato',          today:todayRow.ZomatoRev,    ref:refRowForChannel ? refRowForChannel.ZomatoRev : null,   icon:'🍅'},
+    {n:'Swiggy',          today:todayRow.SwiggyRev,    ref:refRowForChannel ? refRowForChannel.SwiggyRev : null,   icon:'🧡'},
+  ];
+  
+  // Viz cards
+  var vizHtml = channels.map(function(ch) {
+    var delta = ch.ref !== null ? (ch.today - ch.ref) : null;
+    var pct   = (delta !== null && ch.ref > 0) ? (delta / ch.ref * 100) : null;
+    var color = delta === null ? 'var(--m1)' : delta >= 0 ? 'var(--grn)' : 'var(--red)';
+    var sign  = delta >= 0 ? '+' : '';
+    return '<div style="background:var(--s2);border:1px solid var(--b1);border-radius:12px;padding:12px;text-align:center">'
+      + '<div style="font-size:18px;margin-bottom:4px">'+ch.icon+'</div>'
+      + '<div style="font-size:10px;color:var(--m1);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">'+ch.n+'</div>'
+      + '<div style="font-size:15px;font-weight:800;color:var(--txt);font-family:\'DM Mono\',monospace">₹'+fmtN(ch.today)+'</div>'
+      + (pct !== null ? '<div style="font-size:11px;color:'+color+';font-weight:700;margin-top:4px">'+sign+pct.toFixed(1)+'%</div>' : '<div style="font-size:10px;color:var(--m1);margin-top:4px">No ref</div>')
+      + '</div>';
+  }).join('');
+  document.getElementById('drillChannelViz').innerHTML = vizHtml;
+  
+  document.getElementById('drillChannelBody').innerHTML = channels.map(function(ch) {
+    if (ch.ref === null) {
+      return '<tr><td>' + ch.icon + ' ' + ch.n + '</td><td class="num">₹'+fmtN(ch.today)+'</td>'
+        + '<td class="num" colspan="3" style="color:var(--m1);font-style:italic">No reference data</td>'
+        + '<td class="num">—</td></tr>';
+    }
+    var delta = ch.today - ch.ref;
+    var pct   = ch.ref > 0 ? (delta / ch.ref * 100) : 0;
+    var isDown = delta < 0;
+    var color  = isDown ? 'var(--red)' : 'var(--grn)';
+    var verdict = isDown
+      ? (Math.abs(pct) > 15 ? '🔴 Major Drop' : '🟠 Minor Drop')
+      : (pct > 10 ? '🟢 Strong Gain' : '🔵 Stable');
+    return '<tr>'
+      + '<td style="font-weight:600">' + ch.icon + ' ' + ch.n + '</td>'
+      + '<td class="num">₹' + fmtN(ch.today) + '</td>'
+      + '<td class="num">₹' + fmtN(ch.ref) + '</td>'
+      + '<td class="num" style="color:' + color + ';font-weight:700">' + (delta >= 0 ? '+' : '') + '₹' + fmtN(Math.abs(delta)) + '</td>'
+      + '<td class="num" style="color:' + color + ';font-weight:700">' + (delta >= 0 ? '+' : '') + pct.toFixed(1) + '%</td>'
+      + '<td class="num"><span style="font-size:11px">' + verdict + '</span></td>'
+      + '</tr>';
+  }).join('');
+  
+  // ── Slot Drill ──
+  slotCard.style.display = 'block';
+  var slotColors = ['#f59e0b','#60a5fa','#a78bfa','#f87171'];
+  
+  // Get ref slot rows from prevMonthSameWdRow date
+  var refSlotDate = prevMonthSameWdRow ? prevMonthSameWdRow.Date : null;
+  var refSlotRows = {};
+  slotNames.forEach(function(s){ 
+    refSlotRows[s] = refSlotDate ? data.find(function(r){ return r.Date === refSlotDate && r.MealSlot === s; }) || null : null; 
+  });
+  
+  // Chart data
+  killChart('chDrillSlot');
+  var chartCanvas = document.getElementById('chartDrillSlot');
+  if (chartCanvas) {
+    CI.chDrillSlot = new Chart(chartCanvas, {
+      type: 'bar',
+      data: {
+        labels: slotNames.map(function(s){ return s.split(' ')[0]; }),
+        datasets: [
+          { label: 'Today', data: slotNames.map(function(s){ return todaySlotRows[s] ? todaySlotRows[s].GrossRevenue : 0; }), backgroundColor: slotColors.map(function(c){ return c+'cc'; }), borderRadius: 5 },
+          { label: 'Ref ('+(refSlotDate ? fmtRef(refSlotDate) : 'N/A')+')', data: slotNames.map(function(s){ return refSlotRows[s] ? refSlotRows[s].GrossRevenue : 0; }), backgroundColor: 'rgba(148,163,184,0.2)', borderRadius: 5 }
+        ]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        scales: {
+          x: { grid: { color: GC } },
+          y: { grid: { color: GC }, ticks: { callback: function(v){ return '₹'+fmtN(v); } } }
+        },
+        plugins: {
+          legend: { labels: { color: '#94a3b8' } },
+          tooltip: { ...TT, callbacks: { label: function(c){ return c.dataset.label+': ₹'+fmtN(c.raw); } } }
+        }
+      }
+    });
+  }
+  
+  document.getElementById('drillSlotBody').innerHTML = slotNames.map(function(s, idx) {
+    var todaySlot = todaySlotRows[s];
+    var refSlot   = refSlotRows[s];
+    var todayRev  = todaySlot ? todaySlot.GrossRevenue : 0;
+    var todayOrd  = todaySlot ? todaySlot.TotalOrders : 0;
+    var refRev    = refSlot ? refSlot.GrossRevenue : null;
+    var refOrd    = refSlot ? refSlot.TotalOrders : null;
+    var revDelta  = refRev !== null ? (todayRev - refRev) : null;
+    var ordDelta  = refOrd !== null ? (todayOrd - refOrd) : null;
+    var revPct    = (revDelta !== null && refRev > 0) ? (revDelta / refRev * 100) : null;
+    var isDown    = revDelta !== null && revDelta < 0;
+    var color     = revDelta === null ? 'var(--m1)' : isDown ? 'var(--red)' : 'var(--grn)';
+    
+    // Channel split for this slot today
+    var dineShare = todayRev > 0 && todaySlot ? ((todaySlot.DineInRev||0)/todayRev*100).toFixed(0)+'%D' : '—';
+    var delShare  = todayRev > 0 && todaySlot ? (((todaySlot.ZomatoRev||0)+(todaySlot.SwiggyRev||0))/todayRev*100).toFixed(0)+'%Del' : '—';
+    
+    var verdict = revDelta === null ? '—'
+      : isDown ? (Math.abs(revPct) > 20 ? '🔴 Major Drop' : '🟠 Moderate Drop')
+      : revPct > 15 ? '🟢 Outperforming' : '🔵 On Track';
+    
+    return '<tr>'
+      + '<td style="color:' + slotColors[idx] + ';font-weight:700">' + s.split(' ')[0] + '<div style="font-size:9px;color:var(--m1);font-weight:400">' + s.match(/\(([^)]+)\)/)[1] + '</div></td>'
+      + '<td class="num">₹' + fmtN(todayRev) + '</td>'
+      + '<td class="num">' + fmtN(todayOrd) + '</td>'
+      + '<td class="num">' + (refRev !== null ? '₹'+fmtN(refRev) : '—') + '</td>'
+      + '<td class="num">' + (refOrd !== null ? fmtN(refOrd) : '—') + '</td>'
+      + '<td class="num" style="color:' + color + ';font-weight:700">' + (revDelta !== null ? (revDelta >= 0 ? '+' : '') + '₹' + fmtN(Math.abs(revDelta)) : '—') + '</td>'
+      + '<td class="num" style="color:' + (ordDelta !== null && ordDelta < 0 ? 'var(--red)' : ordDelta !== null && ordDelta >= 0 ? 'var(--grn)' : 'var(--m1)') + '">' + (ordDelta !== null ? (ordDelta >= 0 ? '+' : '') + ordDelta.toFixed(0) : '—') + '</td>'
+      + '<td class="num" style="font-size:10px;color:var(--m1)">' + dineShare + ' / ' + delShare + '</td>'
+      + '<td class="num"><span style="font-size:11px">' + verdict + '</span></td>'
+      + '</tr>';
+  }).join('');
+  
+  // ── Root Cause Summary ──
+  rootCard.style.display = 'block';
+  var rcBody = document.getElementById('drillRootCauseBody');
+  
+  // Compute worst channel and slot
+  var worstCh = channels.filter(function(c){ return c.ref !== null; }).sort(function(a,b){
+    var da = a.today - a.ref, db = b.today - b.ref; return da - db;
+  })[0];
+  var overallDelta = prevMonthSameWdRow ? (todayRow.GrossRevenue - prevMonthSameWdRow.GrossRevenue) : null;
+  var overallPct   = (overallDelta !== null && prevMonthSameWdRow) ? (overallDelta / prevMonthSameWdRow.GrossRevenue * 100) : null;
+  
+  var worstSlotIdx = -1, worstSlotPct = 0;
+  slotNames.forEach(function(s, idx) {
+    var todaySlot = todaySlotRows[s]; var refSlot = refSlotRows[s];
+    if (!todaySlot || !refSlot || refSlot.GrossRevenue === 0) return;
+    var pct = (todaySlot.GrossRevenue - refSlot.GrossRevenue) / refSlot.GrossRevenue * 100;
+    if (idx === 0 || pct < worstSlotPct) { worstSlotIdx = idx; worstSlotPct = pct; }
+  });
+  
+  var rcHtml = '';
+  var dateLabel = fullDayNames[selectedWeekday] + ', ' + selD.getDate() + ' ' + mNames[selD.getMonth()];
+  
+  if (overallDelta !== null) {
+    var isGoodDay = overallDelta >= 0;
+    rcHtml += '<div style="margin-bottom:10px;padding:10px 14px;border-radius:8px;background:' + (isGoodDay ? 'rgba(16,185,129,0.08)' : 'rgba(244,63,94,0.08)') + ';border-left:3px solid ' + (isGoodDay ? 'var(--grn)' : 'var(--red)') + '">'
+      + '<span style="font-weight:800;color:' + (isGoodDay ? 'var(--grn)' : 'var(--red)') + '">' + (isGoodDay ? '📈 Positive Day' : '📉 Revenue Drop Day') + '</span> — '
+      + dateLabel + ' recorded <strong style="color:var(--txt)">₹' + fmtN(todayRow.GrossRevenue) + '</strong> gross revenue, '
+      + (isGoodDay ? 'up' : 'down') + ' <strong style="color:' + (isGoodDay ? 'var(--grn)' : 'var(--red)') + '">' + (overallDelta >= 0 ? '+' : '') + '₹' + fmtN(Math.abs(overallDelta)) + ' (' + (overallPct >= 0 ? '+' : '') + overallPct.toFixed(1) + '%)</strong> vs same ' + selectedWeekdayName + ' last month.'
+      + '</div>';
+  } else {
+    rcHtml += '<div style="padding:10px 14px;border-radius:8px;background:var(--s2);margin-bottom:10px">No prior month reference data. Analysis based on current day metrics only.</div>';
+  }
+  
+  if (worstCh && (worstCh.today - worstCh.ref) < 0) {
+    var chDrop = worstCh.today - worstCh.ref;
+    var chPct  = worstCh.ref > 0 ? (chDrop / worstCh.ref * 100) : 0;
+    rcHtml += '🔴 <strong>Primary Channel Drop:</strong> <span style="color:var(--txt)">' + worstCh.n + '</span> fell <strong style="color:var(--red)">₹' + fmtN(Math.abs(chDrop)) + ' (' + chPct.toFixed(1) + '%)</strong> vs reference. This was the highest-impact channel shift.';
+    rcHtml += '<br>';
+  }
+  
+  if (worstSlotIdx >= 0 && worstSlotPct < 0) {
+    rcHtml += '🕐 <strong>Underperforming Slot:</strong> <span style="color:var(--txt)">' + slotNames[worstSlotIdx].split(' ')[0] + '</span> saw <strong style="color:var(--red)">' + worstSlotPct.toFixed(1) + '%</strong> revenue decline. Focus operational checks on this slot.';
+    rcHtml += '<br>';
+  }
+  
+  if (todayRow.CancelledOrders > 0) {
+    var cancelPct = todayRow.TotalOrders > 0 ? (todayRow.CancelledOrders / todayRow.TotalOrders * 100) : 0;
+    rcHtml += '⚠️ <strong>Cancellations:</strong> <span style="color:var(--red)">' + fmtN(todayRow.CancelledOrders) + ' orders cancelled</span> (' + cancelPct.toFixed(1) + '% rate). Investigate platform reliability and kitchen acceptance times.';
+    rcHtml += '<br>';
+  }
+  
+  var dayAov = todayRow.TotalOrders > 0 ? (todayRow.GrossRevenue / todayRow.TotalOrders) : 0;
+  var refAov  = (prevMonthSameWdRow && prevMonthSameWdRow.TotalOrders > 0) ? (prevMonthSameWdRow.GrossRevenue / prevMonthSameWdRow.TotalOrders) : null;
+  if (refAov && Math.abs(dayAov - refAov) > 10) {
+    var aovDir = dayAov > refAov ? 'higher' : 'lower';
+    rcHtml += '💰 <strong>AOV Shift:</strong> Today\'s AOV ₹' + dayAov.toFixed(0) + ' is ' + aovDir + ' than reference ₹' + refAov.toFixed(0) + '. ' + (dayAov < refAov ? 'Possible upsell opportunity or discount overuse.' : 'Strong ticket size — check if driven by combo sales.');
+  }
+  
+  rcBody.innerHTML = rcHtml || '<span style="color:var(--m1)">No significant anomalies detected.</span>';
 };
 
 function getDayNameFromDate(dateStr) {
